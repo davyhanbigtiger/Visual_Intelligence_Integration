@@ -37,7 +37,7 @@
 |---|---|---|---|---|---|
 | Intel Core i7-1355U(10核/12线程,无独立显卡) | Ollama,纯CPU,图像编码器强制跑CPU(Ollama对核显系统的已知限制) | 单帧,新图,极短输出 | **~4.5秒** | ✅实测 | 2026-09-29,本机测试,见 open-source-landscape.md |
 | 同上 | Ollama,同上,但重复发送同一张图(缓存命中) | 单帧,重复图 | ~2.2秒 | ✅实测 | 不代表真实场景,列出来是为了说明陷阱1 |
-| 同上 + Iris Xe (96 EU) | llama.cpp SYCL 后端,视觉编码器offload到核显 | 单帧,新图 | ❓待测 | 待测 | 已确认硬件够格(96EU > 80EU可用门槛),尚未安装验证 |
+| 同上 + Iris Xe (96 EU) | llama.cpp SYCL 后端,视觉编码器offload到核显 | 单帧,新图 | ❓待测 | 🔄进行中 | 已确认硬件够格(96EU > 80EU可用门槛),下载/安装步骤见下方"当前实验记录" |
 | Apple M4(推测型号),Metal 加速 | Ollama,Metal | 单帧 | 据称2-4秒(视觉编码部分) | 📄第三方报告 | 来自 GitHub issue 讨论,未验证,且该数字疑似指编码阶段而非端到端 |
 | Intel Iris Xe,Qwen3.5-4B(不是我们的模型) | llama.cpp SYCL | 纯文本生成 | 2.7→5.6 tok/s(不同驱动版本) | 📄第三方报告 | 不同模型/任务类型,仅供数量级参考,不能直接套用到我们的场景 |
 | 云端 GPU(型号未定) | 待定 | 单帧/视频chunk | ❓待测 | 待测 | 用户已确认可以按需租用,尚未选定具体GPU型号/云平台 |
@@ -57,4 +57,31 @@
 两条线加起来就是一张有意义的矩阵雏形,以后再补其他硬件档位(比如手机端侧
 NPU、真正的独立显卡等)。
 
-想先做哪一个,还是两个都排上?
+**已确认(2026-09-29)**:先做①Iris Xe SYCL 这一项,云GPU②留待之后。
+
+## 当前实验记录:Iris Xe + SYCL(2026-09-29,进行中)
+
+**为什么选 SYCL,不是继续调 Ollama**:已确认 Ollama 在所有共享显存的核显/
+APU 系统上都硬性禁止把视觉编码器offload到GPU(防OOM的保守策略),截至
+Ollama 0.34.4 没有环境变量能绕过。要用上这台机器的 Iris Xe(96 EU,超过
+SYCL"可用"门槛80 EU),必须换成 llama.cpp 的 SYCL 后端,绕开 Ollama。
+
+**具体素材(可复现,来源均为官方发布)**:
+- `llama.cpp` Windows SYCL 预编译版:build `b11146`,文件
+  `llama-b11146-bin-win-sycl-x64.zip`,120,194,517 字节(约114.6MB),来自
+  <https://github.com/ggml-org/llama.cpp/releases/download/b11146/llama-b11146-bin-win-sycl-x64.zip>。
+  该包自带 oneAPI 运行时 DLL,不需要另装 Intel oneAPI 工具链。
+- 主模型:`MiniCPM-V-4.6-Q4_K_M.gguf`,529,101,536 字节(约504.6MB),来自
+  <https://huggingface.co/ggml-org/MiniCPM-V-4.6-GGUF/resolve/main/MiniCPM-V-4.6-Q4_K_M.gguf>
+- 视觉投影文件:`mmproj-MiniCPM-V-4.6-Q8_0.gguf`,727,954,528 字节(约694.3MB),来自
+  <https://huggingface.co/ggml-org/MiniCPM-V-4.6-GGUF/resolve/main/mmproj-MiniCPM-V-4.6-Q8_0.gguf>
+- 三个文件合计约 1.31GB,下载到本机 scratchpad 临时目录(不进 git 仓库)
+
+**计划步骤**:
+1. 下载上述三个文件(进行中)
+2. 解压 llama.cpp SYCL 包
+3. 用其中的多模态命令行工具(`llama-mtmd-cli` 或同名工具),通过 `-ngl` 参数
+   把计算层offload到 Iris Xe,加载主模型+mmproj
+4. 用和 Ollama 测试同一张新图片(遵守上面"已知方法陷阱"里的规则:不重复
+   发送同一张图、不在测试中途混用文字/图像模态)测一次端到端耗时
+5. 把结果填回上面的矩阵表格,注明 ✅实测,并与 CPU-only 的 ~4.5秒 基线对比
