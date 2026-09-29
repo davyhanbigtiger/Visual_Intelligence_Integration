@@ -1,0 +1,12 @@
+# Claude Code session state (local, not project content)
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Video/model assets (large binaries, not meant for git)
+videos/
+*.gguf
