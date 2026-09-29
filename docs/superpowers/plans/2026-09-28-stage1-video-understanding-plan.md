@@ -20,6 +20,7 @@
 - On a failed model call, retry exactly once, then mark that chunk `"status": "failed"` without stopping the rest of the video (spec §7).
 - No independent object-detection model, no vector index/RAG — one VLM (`minicpm-v4.6` via Ollama at `http://localhost:11434`, swappable later) handles everything (spec §2/§9).
 - Deterministic logic (sampling, parsing, report assembly) gets real pytest unit tests. End-to-end model output quality is verified by manual spot-check (Task 9), never asserted in an automated test (spec §8).
+- `cmd_report` processes chunks with up to 4 concurrent workers, not sequentially — measured via a dedicated hardware exploration (docs/benchmark-matrix.md) to give a 5.05x throughput win with no quality loss; result order must be preserved regardless of which chunk's call finishes first (Task 8).
 
 ---
 
@@ -1246,6 +1247,48 @@ def test_report_command_writes_report_using_real_pipeline(tiny_video, tmp_path, 
     assert report["chunks"][0]["description"] == "A calm test scene."
 
 
+def test_report_command_preserves_chunk_order_under_concurrency(tiny_video, tmp_path):
+    import time
+
+    from visualintel.engine import ChunkResult
+    from visualintel.sampling import ChunkPlan
+
+    fake_chunks = [
+        ChunkPlan(chunk_index=i, frame_indices=[0], start_time=float(i), end_time=float(i) + 1)
+        for i in range(4)
+    ]
+
+    def fake_analyze_chunk(video_path, chunk, model="minicpm-v4.6"):
+        # later chunks sleep less, so if execution order controlled result
+        # order we'd see it scrambled — executor.map must keep input order
+        # regardless of which finishes first
+        time.sleep(0.05 * (4 - chunk.chunk_index))
+        return ChunkResult(
+            chunk_index=chunk.chunk_index,
+            start_time=chunk.start_time,
+            end_time=chunk.end_time,
+            status="ok",
+            description=f"chunk {chunk.chunk_index}",
+            unusual_flagged=False,
+            unusual_note="",
+            guidance_assessment="",
+            guidance_suggestion="",
+            guidance_confidence="low",
+        )
+
+    output_dir = str(tmp_path / "out")
+    with patch("visualintel.cli.check_ollama_ready", return_value=None), \
+         patch("visualintel.cli.plan_chunks", return_value=(fake_chunks, False)), \
+         patch("visualintel.cli.analyze_chunk", side_effect=fake_analyze_chunk):
+        code = main(["report", tiny_video, "--output-dir", output_dir])
+
+    assert code == 0
+    import json
+    report = json.loads(open(f"{output_dir}/report.json", encoding="utf-8").read())
+    descriptions = [c["description"] for c in report["chunks"]]
+    assert descriptions == ["chunk 0", "chunk 1", "chunk 2", "chunk 3"]
+
+
 def test_ask_command_prints_answer(tiny_video, capsys):
     with patch("visualintel.cli.check_ollama_ready", return_value=None), \
          patch("visualintel.engine.call_model", return_value="ANSWER: Nothing unusual.\n"):
@@ -1273,6 +1316,7 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'visualintel.cli'`
 ```python
 # src/visualintel/cli.py
 import argparse
+import concurrent.futures
 import sys
 from pathlib import Path
 
@@ -1301,6 +1345,15 @@ def _video_fps_and_frame_count(video_path: str) -> tuple[float, int]:
     return fps, total_frames
 
 
+MAX_CONCURRENT_CHUNKS = 4  # measured sweet spot via llama-server/SYCL on this
+# machine's iGPU (see docs/benchmark-matrix.md "并发实验结论": 4 concurrent
+# requests gave a 5.05x throughput win over sequential, 8 was *worse* than 4
+# due to GPU contention). This run targets Ollama per the approved spec —
+# the optimal concurrency for Ollama's CPU-bound vision encoder path hasn't
+# been separately measured and may differ; 4 is a reasonable starting point,
+# not verified optimal for this specific backend.
+
+
 def cmd_report(video_path: str, output_dir: str, model: str = DEFAULT_MODEL) -> int:
     check_ollama_ready(model=model)
     fps, total_frames = _video_fps_and_frame_count(video_path)
@@ -1309,7 +1362,8 @@ def cmd_report(video_path: str, output_dir: str, model: str = DEFAULT_MODEL) -> 
         print(f"ERROR: no frames could be sampled from {video_path}", file=sys.stderr)
         return 1
 
-    results = [analyze_chunk(video_path, chunk, model=model) for chunk in chunks]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONCURRENT_CHUNKS) as ex:
+        results = list(ex.map(lambda c: analyze_chunk(video_path, c, model=model), chunks))
     duration_sec = total_frames / fps if fps else 0.0
     report = build_report(video_path, duration_sec, truncated, results)
     json_path, md_path = save_report(report, output_dir)
@@ -1383,7 +1437,7 @@ if __name__ == "__main__":
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `python -m pytest tests/test_cli.py -v`
-Expected: PASS (4 tests)
+Expected: PASS (5 tests)
 
 - [ ] **Step 6: Run the full test suite**
 
