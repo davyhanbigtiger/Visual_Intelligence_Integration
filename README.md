@@ -14,6 +14,7 @@
 - [docs/open-source-landscape.md](docs/open-source-landscape.md) —— 理解层/感知层/异常检测/RAG整合层的开源方案候选清单,含 MiniCPM-V 4.6 实测结果
 - [docs/superpowers/specs/2026-09-28-stage1-video-understanding-design.md](docs/superpowers/specs/2026-09-28-stage1-video-understanding-design.md) —— Stage 1 正式设计spec(已批准,待写实现计划)
 - [docs/long-term-roadmap-robot-control.md](docs/long-term-roadmap-robot-control.md) —— 长期北极星:从视频理解到机器人闭环控制的分阶段安全路线图(方向性文档,非当前实现范围)
+- [docs/benchmark-matrix.md](docs/benchmark-matrix.md) —— 硬件档位 vs 延迟的能力矩阵(哪个硬件档位能做到多快,持续补充)
 
 ## 当前状态
 
@@ -22,5 +23,7 @@
 - [x] 完成架构方案对比,选定方案A(VLM-only,MiniCPM-V 4.6起步)
 - [x] 完成 Stage 1 设计文档(design spec)并确认
 - [x] 记录长期方向(机器人闭环控制)及其分阶段安全里程碑
-- [ ] 把 Stage 1 spec 拆成具体实现计划
-- [ ] 开始 Stage 1 实现
+- [x] 完成 Stage 1 实现计划(9个TDD任务)
+- [x] 开始硬件能力矩阵调研(本机CPU数据已实测,GPU档位待补)
+- [ ] 执行 Stage 1 实现计划
+- [ ] 补全硬件矩阵(Iris Xe SYCL / 云GPU 数据点)
