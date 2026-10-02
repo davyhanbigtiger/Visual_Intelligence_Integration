@@ -1,10 +1,16 @@
 # Stage 1 设计文档:离线视频理解引擎(VLM-only)
 
+> 2026-10-02 范围补充：原离线设计与验收记录保留；用户后续授权增加 `scene`
+> 和独立 Windows 11 `camera` demo。历史“不做摄像头”仅指原 Stage 1 范围。
+> 默认仍为 MiniCPM；SmolVLM-500M CPU 是未来 Plan B/辅助候选，未接入自动切换。
+> 摄像头读取、预览 smoke test、一次模型调用已验证，连续质量待验收；
+> 最新 87 项测试通过，见 [项目状态](../../project-status-2026-10-02.md)。
+
 > 状态:brainstorming 已完成方案对比与分段设计确认,本文档是正式 spec,
-> 待用户审核。背景/目标/约束的完整推导过程见
-> [../project-goals.md](../project-goals.md)、
-> [../hardware-inventory.md](../hardware-inventory.md)、
-> [../open-source-landscape.md](../open-source-landscape.md)。本文档只记录
+> 已批准并实现 Stage 1 代码，真实场景质量验收仍待完成。背景/目标/约束的完整推导过程见
+> [../../project-goals.md](../../project-goals.md)、
+> [../../hardware-inventory.md](../../hardware-inventory.md)、
+> [../../open-source-landscape.md](../../open-source-landscape.md)。本文档只记录
 > **这一版要实现什么、怎么实现**,不重复背景论证。
 
 ## 1. 范围
@@ -156,3 +162,70 @@ medium, high — based on how clear and unambiguous the frames are.
 - 不做独立目标检测/追踪模型(避免过早引入 AGPL-3.0 依赖)
 - 不做向量索引/RAG(视频数量少时收益低于成本)
 - 不做多用户、鉴权、云端部署等产品化基础设施
+
+## 10. Stage 1 manual verification log（2026-09-30）
+
+### 已验证
+
+- 环境：本机 Windows、Python 3.12.8；独立 `.venv` 中安装
+  opencv-python 5.0.0.93、pytest 9.1.1；`pip check` 无依赖冲突。
+- 自动化（初轮实现）：63 项 pytest 测试通过，包括真实合成视频的抽帧、并发顺序、
+  模型失败重试、错误退出码、已有报告保护、UTF-8 控制台输出。
+  模型响应使用 mock，测试通过不代表理解质量通过。
+- `ollama list` 确认本机 `minicpm-v4.6:latest` 已安装。
+- 复用此前 spike 的 `test_video.avi`，原素材保留，副本置于 `videos/`。
+  OpenCV 读取到 179 帧、15 fps，时长约 11.93 秒；报告采样
+  0/2/4/6/8/10 秒六帧。真实 `report --workers 1` 返回 0，生成
+  `outputs/smoke-20260930/report.json` 与 `report.md`，中文固定免责声明存在。
+- 本轮助手对抽样帧的视觉核对（尚未经用户独立人工复核）：人物先触碰头颈/嘴部，随后拿白色杯子，模型的
+  主体动作描述基本与可见画面一致。这是单片段核对，不代表跨场景能力。
+- 缺失视频命令返回 1，错误清晰；不可连接的本地端口验证产生
+  `EngineNotReadyError`。未停掉现有 Ollama 服务来测试。
+- 已有报告再次运行被拒绝，原文件保留。
+
+### 发现与修复
+
+- 首次真实报告的建议包含 “Do not …” 指令语气，且异常标记为 true
+  但说明为空。原报告保留以供复查，未手改成“合格”输出。
+  已增加部分明显英文/中文指令句的拦截，替换为不提供行动建议的说明，
+  confidence 降为 low。该规则已通过回归测试，但不是完整语义安全校验。
+- 首次真实事实问答在 Windows 控制台出现 `charmap` 编码失败，退出 1；
+  已修复 CLI stdout/stderr 为 UTF-8，并添加真实编码流的回归测试。
+- 真实建议问题 “Does this scene need caution, and what might I consider?”
+  用时约 117.73 秒，命令返回 0，但模型将 `GUIDANCE` 写成 `GUIDENCE`，
+  原解析漏加免责声明，且使用 “Consider …” 指令语气，内容缺少具体细节。
+  已兼容该拼写并扩大明显指令拦截规则。原输出保留在
+  `outputs/verification/advice-ask.txt`，最终代码对该真实输出的回放结果
+  保存在 `advice-ask-guarded.txt`：建议被暂扣并添加固定免责声明。
+  这是对真实输出的解析回放验证，不是声称修复后又跑了一次同样的模型调用。
+- UTF-8 修复后真实事实问答重新运行成功，返回 0，用时约 209.47 秒；
+  描述人物、眼镜、白杯与手部动作基本符合抽样画面，但模型仍附加了
+  GUIDANCE。原输出保存在 `outputs/verification/factual-ask.txt`。
+  已增加问题关键词分类：事实问题丢弃 guidance，求建议问题即使模型没有
+  给出字段标记也拼接免责声明，并对明显指令句进行拦截。
+  原输出的过滤回放保存在 `factual-ask-filtered.txt`，分类行为通过中英文
+  回归测试。该分类是启发式规则，复杂问题仍可能误判；本轮未再重复整个
+  昂贵的模型调用来验证最后的确定性解析修改。
+
+### 尚待验收
+
+- 新录制的真实障碍物/绕行视频未提供，未主动启动摄像头采集。
+- 导航建议的具体性未通过本轮抽查；事实问题与建议问题的稳定区分、模型
+  完全忽略字段格式时的处理，仍需进一步验证。当前规则不能保证识别所有
+  指令措辞或建议语义。
+- 4 路并发在本项目 Ollama 后端的实际收益未测；既有 5.05 倍数据属于
+  llama.cpp/SYCL 单帧实验，不作为本实现性能承诺。
+- 当前结论：Stage 1 工程框架可运行；建议质量仍需迭代，不能认定整个
+  Stage 1 已完成质量验收，也不能据此进入机器人控制阶段。
+
+HTTP 接口实现对照了 [Ollama generate](https://docs.ollama.com/api/generate)
+与 [模型列表](https://docs.ollama.com/api/tags) 官方文档；本轮没有重新审核
+历史调研文档中的全部模型、许可证和性能结论。
+
+### 后续迭代（2026-09-30）
+
+继续进行了真实模型与结构化输出对照，新增 JSON Schema、输出上限、
+校验失败后的定向修复重试，以及显式问答类型选择。
+当前 83 项自动化测试通过；真实生产流程的报告/事实问答/建议问答均实际运行。
+质量缺陷与候选模型结论见 [本轮评估](../../model-evaluation-2026-09-30.md)。
+以上运行成功不等于导航建议质量通过，仍未完成 Stage 1 独立人工验收。

@@ -1,5 +1,32 @@
 # Stage 1 Video Understanding Engine Implementation Plan
 
+## 最新执行状态（2026-10-02）
+
+在原离线实现之外增加 `scene` 与 Windows 11 `camera` demo，复用 MiniCPM/Ollama。
+摄像头实时预览、后台单请求分析、提交帧与耗时展示已实现；连续模式不积压请求。
+本日重新运行 pytest：87 项通过。此前真实摄像头读取/预览及单次模型调用已验证，
+用户连续场景质量与稳定性验收待完成。SmolVLM-500M CPU 保留为未来 Plan B/辅助候选。
+历史任务复选框和 2026-09-30 测试数量保留，不作为当前状态。
+详见 [项目状态](../../project-status-2026-10-02.md)；未自动提交或推送。
+
+## 执行状态（2026-09-30）
+
+Task 1–8 的代码与测试已实现，使用项目独立 `.venv`；当前 83 项 pytest 测试通过。
+原始步骤中的“先观察测试失败”与 commit 步骤未逐项执行，保留原复选框，
+不将它们误标为已完成。当前更改保留在工作区，未自动提交或推送。
+Task 9 的真实模型检查与待验收项见设计 spec 第 10 节。
+
+后续模型实测与结构化改进见 `docs/model-evaluation-2026-09-30.md`；
+新增 JSON Schema、输出上限、校验修复重试和显式问答模式，当前自动化测试
+83 项通过。旧文本解析仍保留，模型质量未等同于工程验证结果。
+
+补充实现：验证采样参数、限制长视频采样内存、精确匹配模型标签、拒绝空图像
+与空响应、抽帧失败标记 chunk 失败、失败报告返回非零退出码、保护已有报告、
+支持 `--workers` 和 `--max-chunks`。confidence 明确标为模型自评。
+真实模型报告暴露指令语气违规，已加入部分明显指令句的保守拦截；
+这不是完整的语义安全校验，仍需人工质量验收。
+本环境没有计划所提的 superpowers skills，直接依据本计划实现与验证。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a command-line tool that reads a video file, samples frames from it, asks a local vision-language model (via Ollama) to describe what happens and give hedged situational guidance, and either writes a report (`report` command) or answers an ad-hoc question about the video (`ask` command).
