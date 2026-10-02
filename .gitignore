@@ -10,3 +10,6 @@ venv/
 # Video/model assets (large binaries, not meant for git)
 videos/
 *.gguf
+outputs/
+.pytest_cache/
+*.egg-info/
