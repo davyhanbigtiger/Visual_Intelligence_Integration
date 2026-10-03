@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "max_file_mb": 30,
+  "images": [
+    {
+      "name": "coco-000000000139.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000000139.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000000285.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000000285.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000000632.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000000632.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000000724.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000000724.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000000776.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000000776.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000000785.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000000785.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000000802.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000000802.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000000872.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000000872.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000000885.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000000885.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000001000.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000001000.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000001268.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000001268.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000001296.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000001296.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000001353.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000001353.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000001425.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000001425.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000001490.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000001490.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000001503.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000001503.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000001532.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000001532.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000001584.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000001584.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000001675.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000001675.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000001761.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000001761.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000001818.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000001818.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000001993.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000001993.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000002006.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000002006.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    },
+    {
+      "name": "coco-000000002149.jpg",
+      "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000002149.jpg",
+      "source": "COCO val2017 (https://cocodataset.org/)",
+      "license_note": "Images carry their original Flickr licenses/terms; used here only for private latency benchmarking and never committed or redistributed"
+    }
+  ],
+  "videos": [
+    {
+      "name": "nasa-robonaut.mp4",
+      "url": "https://images-assets.nasa.gov/video/ksc_082710_robonaut/ksc_082710_robonaut~mobile.mp4",
+      "source": "NASA Image and Video Library (https://images.nasa.gov/) id ksc_082710_robonaut",
+      "license_note": "NASA media is generally not copyrighted, but individual items can carry third-party restrictions (not re-verified per item); used for private benchmarking only",
+      "describe": "indoor robot demonstration"
+    },
+    {
+      "name": "nasa-crawler.mp4",
+      "url": "https://images-assets.nasa.gov/video/ksc_122304_rtf_crawler/ksc_122304_rtf_crawler~mobile.mp4",
+      "source": "NASA Image and Video Library (https://images.nasa.gov/) id ksc_122304_rtf_crawler",
+      "license_note": "NASA media is generally not copyrighted, but individual items can carry third-party restrictions (not re-verified per item); used for private benchmarking only",
+      "describe": "large vehicle moving outdoors"
+    },
+    {
+      "name": "nasa-inside-ksc.mp4",
+      "url": "https://images-assets.nasa.gov/video/KSC-20210507-VP-MWC01-001-INSIDEKSC-3274662/KSC-20210507-VP-MWC01-001-INSIDEKSC-3274662~mobile.mp4",
+      "source": "NASA Image and Video Library (https://images.nasa.gov/) id KSC-20210507-VP-MWC01-001-INSIDEKSC-3274662",
+      "license_note": "NASA media is generally not copyrighted, but individual items can carry third-party restrictions (not re-verified per item); used for private benchmarking only",
+      "describe": "people and facilities"
+    },
+    {
+      "name": "nasa-crew4-science.mp4",
+      "url": "https://images-assets.nasa.gov/video/SpaceX_Crew-4_Science_Journey/SpaceX_Crew-4_Science_Journey~mobile.mp4",
+      "source": "NASA Image and Video Library (https://images.nasa.gov/) id SpaceX_Crew-4_Science_Journey",
+      "license_note": "NASA media is generally not copyrighted, but individual items can carry third-party restrictions (not re-verified per item); used for private benchmarking only",
+      "describe": "mixed scenes with people"
+    }
+  ],
+  "synthetic": {
+    "images": 6,
+    "video": "moving_shapes",
+    "seed": 20261003
+  }
+}

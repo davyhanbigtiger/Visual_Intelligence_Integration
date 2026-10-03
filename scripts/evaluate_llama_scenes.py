@@ -26,6 +26,16 @@ def main():
     parser.add_argument("--port", type=int, default=18937)
     parser.add_argument("--sides", type=int, nargs="+", default=[640, 320])
     parser.add_argument("--structured", action="store_true")
+    parser.add_argument("--server-arg", action="append", default=[],
+                        help="Extra llama-server argument (repeatable), e.g. --server-arg=--image-max-tokens "
+                             "--server-arg=128")
+    parser.add_argument("--prompt", default="Describe this image in one short sentence.",
+                        help="Prompt for non-structured runs (default unchanged)")
+    parser.add_argument("--gpu", action="store_true",
+                        help="Offload the model and the vision projector to the SYCL/OpenCL iGPU "
+                             "(default: force CPU, unchanged)")
+    parser.add_argument("--warmup", default=None,
+                        help="Optional image sent once before timing; its result is discarded")
     args = parser.parse_args()
     if any(side <= 0 for side in args.sides):
         parser.error("sides must be positive")
@@ -33,13 +43,14 @@ def main():
         check.bind(("127.0.0.1", args.port))
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=False)
+    placement = ["-ngl", "99"] if args.gpu else ["--device", "none", "-ngl", "0", "--no-mmproj-offload"]
     command = [str(Path(args.server).resolve()), "-m", str(Path(args.model).resolve()),
-               "--mmproj", str(Path(args.mmproj).resolve()), "--device", "none",
-               "-ngl", "0", "--no-mmproj-offload", "--host", "127.0.0.1",
+               "--mmproj", str(Path(args.mmproj).resolve()), *placement, "--host", "127.0.0.1",
                "--port", str(args.port), "-c", "2048", "--parallel", "1",
                "--no-cache-prompt", "--reasoning", "off"]
     if args.structured:
         command.append("--jinja")
+    command.extend(args.server_arg)
     config = {"args": command,
               "model_sha256": hashlib.sha256(Path(args.model).read_bytes()).hexdigest(),
               "mmproj_sha256": hashlib.sha256(Path(args.mmproj).read_bytes()).hexdigest()}
@@ -62,19 +73,30 @@ def main():
                     time.sleep(1)
             else:
                 raise RuntimeError("Test server not ready")
+            prompt = SCENE_PROMPT if args.structured else args.prompt
+
+            def build_payload(image: bytes) -> dict:
+                payload = {"messages": [{"role": "user", "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64," + base64.b64encode(image).decode()}},
+                ]}], "temperature": 0, "seed": 42,
+                    "max_tokens": 96 if args.structured else 64, "stream": False,
+                    "cache_prompt": False}
+                if args.structured:
+                    payload["response_format"] = {"type": "json_object", "schema": FACTUAL_SCHEMA}
+                return payload
+
+            if args.warmup:
+                warm = resize_encoded_image(Path(args.warmup).read_bytes(), args.sides[0])
+                warm_request = urllib.request.Request(f"http://127.0.0.1:{args.port}/v1/chat/completions",
+                    data=json.dumps(build_payload(warm)).encode(), headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(warm_request, timeout=180) as response:
+                    response.read()
             for side in args.sides:
                 for index, filename in enumerate(args.images):
                     source = Path(filename).read_bytes()
                     image = resize_encoded_image(source, side)
-                    prompt = SCENE_PROMPT if args.structured else "Describe this image in one short sentence."
-                    payload = {"messages": [{"role": "user", "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64," + base64.b64encode(image).decode()}},
-                    ]}], "temperature": 0, "seed": 42,
-                        "max_tokens": 96 if args.structured else 64, "stream": False,
-                        "cache_prompt": False}
-                    if args.structured:
-                        payload["response_format"] = {"type": "json_object", "schema": FACTUAL_SCHEMA}
+                    payload = build_payload(image)
                     record = {"image": str(Path(filename).resolve()), "max_side": side,
                               "source_sha256": hashlib.sha256(source).hexdigest(),
                               "prepared_sha256": hashlib.sha256(image).hexdigest(),
