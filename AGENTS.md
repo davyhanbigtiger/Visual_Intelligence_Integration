@@ -746,3 +746,62 @@ For experimental projects that are still worth trying, prefer an isolated enviro
 - disposable cloud instance
 
 Do not let an experimental GitHub project modify or endanger an existing production environment unless I explicitly approve it.
+
+---
+
+## 31. Benchmark Optimality Audit (Mandatory for Every Benchmark)
+
+Added 2026-10-03 at the user's request. The user's words: "benchmark之一，要确保当地的
+解决方案是不是已经找不到更优解，是否此模型是最优解，有没其他的，是否参数或者模型的方案
+最优化？有没更好的方式？等等问题"
+
+Every benchmark, evaluation, or "this is the best / fastest setup" conclusion in this
+project MUST include an **optimality audit** that answers the questions below. A benchmark
+that only measures the current setup, without asking whether a better one exists, is
+incomplete.
+
+### The questions
+
+1. **Model** - Is the current model the best available for this task and hardware? Which
+   alternatives exist (same size class, newer versions, other vendors)? Which were tested,
+   which were not, and why?
+2. **Parameters** - Which tunable parameters affect the result (input size / image slice
+   count, threads, batch size, context length, output length, sampling, quantization,
+   prompt, structured-output constraint, caching, keep-alive, concurrency)? Which were
+   swept, over what range, and which remain untouched?
+3. **Engine, backend and hardware** - Is the same model faster on another runtime
+   (Ollama vs raw llama.cpp vs OpenVINO vs ONNX/DirectML ...) or on other local hardware
+   (CPU vs iGPU vs NPU vs phone vs external accelerator)? Is the available hardware fully used?
+4. **Method and architecture** - Is there a better way to get the same outcome (frame-change
+   gating, caching / reuse, concurrency, a tiered local / cloud split, streaming,
+   distillation, a smaller task-specific model)?
+5. **Baseline validity** - Is the baseline trustworthy? New (not cached) inputs, identical
+   inputs / prompt / sampling across compared conditions, warm-up excluded, order rotated,
+   sample size stated, machine state noted.
+6. **Local vs remote** - Does the local result change the local-vs-remote cost balance
+   (see docs/cost-balance-target-2026-10-03.md)?
+
+### Required output
+
+Each benchmark report includes an audit table with the columns
+`lever | tested range / alternatives | result | exhausted? (yes / no / not applicable) | next step`.
+"Not tested" is a valid entry; silently leaving a lever out is not.
+
+### Wording rules
+
+- Never claim "optimal", "fastest" or "no better solution exists" without the audit table.
+  The strongest allowed claim is "best among the configurations listed as tested".
+- State which levers remain unexhausted and why (cost, risk, needs user action, out of scope).
+- A "latest model / latest version / current price" search must carry its date and source.
+  Such searches expire: re-run them when a month has passed or when a new model, release,
+  hardware generation or price change appears.
+- If a new result overturns an earlier conclusion (including one written by the assistant),
+  correct the earlier document at the top, keep the history, and say what the baseline
+  mistake was.
+
+### Completion and re-audit
+
+The audit is complete when every lever is either (a) tested over a reasonable range,
+(b) justified as not applicable, or (c) explicitly listed as untested with a reason and a cost.
+Re-audit when a new model or runtime is released, a baseline error is found, hardware or
+prices change, or a lever turns out to matter more than expected (then re-sweep its neighbours).
