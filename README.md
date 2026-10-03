@@ -33,7 +33,19 @@
 线程、请求形式、缓存、引擎：Ollama CPU vs llama.cpp CPU vs 核显 SYCL、并发、OpenVINO、
 更小模型、量化）及每项状态见目标文档第 8 节。**已发现并更正一处会影响结论的旧错误**：
 早先“核显路径没有明显优于 CPU”所用的 CPU 基线（约 4.5 秒）是缩图/缓存命中的数字，
-真实新图 640×480 在 Ollama 默认配置下约 16.8 秒，核显路径很可能更快，待受控对照确认。
+真实新图 640×480 在 Ollama 默认配置下约 16.8 秒。**受控对照已完成**（同一 llama.cpp、同一 GGUF、
+同一批帧，n=12/档，详见[延迟分布文档](docs/latency-distribution-2026-10-03.md)）：
+Iris Xe 核显（SYCL）比同引擎 CPU 快 2.1×（640）/1.7×（448），640 档 6.5 秒、448 档 3.0 秒；
+生产用的 Ollama 只加环境变量 `OLLAMA_IGPU_ENABLE=1` 就能走 Vulkan 核显，640 档 7.3 秒、448 档
+4.9 秒（比 Ollama CPU 快 2.3×/1.6×），**但在 24 张公开 COCO 图的冒烟运行里有 3 个输出变成坐标乱码、
+不是合法 JSON，同样的请求在 CPU 上 6/6 合法**——根因未确认，查清前不建议默认启用。
+448 以下只切一块图（快约 2.2×）但“无依据物体断言”增多。
+结论强度：单机、单次会话、内存紧张未受控；“已找不到更优解”**不成立**（OpenVINO、并发、
+llama.cpp 参数、更多模型等仍未穷尽）。默认行为本轮未改。
+
+**云 GPU 测试已备好**：测试集、服务器安装脚本、客户端套件和手册见
+[云 GPU 测试手册](docs/cloud-gpu-test-runbook-2026-10-03.md)，等待用户提供实例（只用公开/合成媒体，
+不上传摄像头画面或个人录像）。
 
 ## 本地运行（Windows PowerShell）
 
@@ -128,6 +140,8 @@ Ollama 请求可能仍在服务端完成。默认不保存画面、视频或描�
 ## 文档索引
 
 - [docs/cost-balance-target-2026-10-03.md](docs/cost-balance-target-2026-10-03.md) —— 目标：本地算力 ↔ 远程 GPU 的最低成本平衡点（目标、约束、证据清单、计划）
+- [docs/latency-distribution-2026-10-03.md](docs/latency-distribution-2026-10-03.md) —— 本机延迟受控实测（输入尺寸/分块阈值、CPU vs 核显、Ollama+Vulkan）与最优性审计表
+- [docs/cloud-gpu-test-runbook-2026-10-03.md](docs/cloud-gpu-test-runbook-2026-10-03.md) —— 云 GPU 短租测试手册：准备物、隐私规则、步骤、测试内容、结束清单
 - [docs/project-status-2026-10-02.md](docs/project-status-2026-10-02.md) —— 当前目标、模型决策、摄像头启动与验证限制
 
 - [docs/project-goals.md](docs/project-goals.md) —— 项目目标、任务定义、场景范围、阶段划分、待决问题

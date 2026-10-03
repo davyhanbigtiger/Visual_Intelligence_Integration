@@ -77,7 +77,8 @@ step "Ollama ${OLLAMA_VERSION}"
 fetch "$OLLAMA_URL" "downloads/$OLLAMA_TAR" "$OLLAMA_SHA256"
 if [ ! -x ollama/bin/ollama ]; then tar --zstd -xf "downloads/$OLLAMA_TAR" -C ollama; fi
 if ! curl -fs --max-time 3 http://127.0.0.1:11434/api/version >/dev/null; then
-  OLLAMA_HOST=127.0.0.1:11434 OLLAMA_MODELS="$WORK/ollama-models" nohup ollama/bin/ollama serve >logs/ollama.log 2>&1 &
+  OLLAMA_HOST=127.0.0.1:11434 OLLAMA_MODELS="$WORK/ollama-models" OLLAMA_NUM_PARALLEL="${OLLAMA_NUM_PARALLEL:-4}" \
+    nohup ollama/bin/ollama serve >logs/ollama.log 2>&1 &
   disown
   for _ in $(seq 1 60); do curl -fs --max-time 2 http://127.0.0.1:11434/api/version >/dev/null && break; sleep 1; done
 fi
