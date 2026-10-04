@@ -45,7 +45,16 @@ if ($Stop) {
 
 if (-not $HostName -or -not $KeyPath) { throw "Pass -HostName and -KeyPath (a dedicated key file), or -Stop." }
 if (-not (Test-Path $KeyPath)) { throw "Key file not found: $KeyPath" }
-if (Test-Path $pidFile) { throw "A stack seems to be running already ($pidFile). Run with -Stop first." }
+if (Test-Path $pidFile) {
+    # The record is kept after -Stop (never deleted); only a still-living recorded process blocks a new start.
+    $previous = Get-Content $pidFile -Raw | ConvertFrom-Json
+    foreach ($name in "tunnel", "facade") {
+        $id = $previous.$name
+        if ($id -and (Get-Process -Id $id -ErrorAction SilentlyContinue)) {
+            throw "The $name from an earlier start is still running (pid $id). Run with -Stop first."
+        }
+    }
+}
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
 $ssh = @("-N", "-L", "${LlamaPort}:127.0.0.1:8080", "-i", $KeyPath, "-o", "IdentitiesOnly=yes", "-o", "ForwardAgent=no",
