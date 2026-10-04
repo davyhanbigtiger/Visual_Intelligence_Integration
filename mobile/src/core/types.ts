@@ -1,8 +1,5 @@
 export type Language = 'zh' | 'en';
 
-export const SCENES = ['road', 'beach', 'indoor', 'nature', 'crowd', 'other', 'unclear'] as const;
-export type Scene = (typeof SCENES)[number];
-
 export const HAZARDS = [
   'none',
   'vehicle',
@@ -16,15 +13,14 @@ export const HAZARDS = [
 ] as const;
 export type Hazard = (typeof HAZARDS)[number];
 
-export const CONFIDENCES = ['low', 'medium', 'high'] as const;
-export type Confidence = (typeof CONFIDENCES)[number];
-
-/** What the model returns. The model only describes and classifies; fixed phrases decide what is spoken. */
+/**
+ * What the model returns. The model only describes and flags a hazard category; fixed phrases decide what is spoken.
+ * Scene labels and a confidence field were removed after live testing (2026-10-04): on 12 public images the scene
+ * label was wrong in about half the cases and the confidence was always "low", so neither carried information.
+ */
 export interface SceneResult {
   answer: string;
-  scene: Scene;
   hazard: Hazard;
-  hazardConfidence: Confidence;
 }
 
 export interface EncodedImage {

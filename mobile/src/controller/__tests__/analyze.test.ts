@@ -10,7 +10,7 @@ import {
 import { PHRASES } from '../../safety/phrases';
 import { createAnalyzeController, type ControllerState } from '../analyze';
 
-const scene: SceneResult = { answer: 'A bear on grass.', scene: 'nature', hazard: 'animal', hazardConfidence: 'high' };
+const scene: SceneResult = { answer: 'A bear on grass.', hazard: 'animal' };
 
 function setup(overrides: { provider?: Partial<VisionProvider>; speakResults?: boolean; language?: Language } = {}) {
   const states: ControllerState[] = [];

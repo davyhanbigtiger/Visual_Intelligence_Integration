@@ -13,7 +13,7 @@ import {
 import { DEFAULT_SETTINGS, type Settings } from '../../settings/store';
 
 const image: EncodedImage = { uri: 'file:///cache/x.jpg', base64: 'QUJD', width: 640, height: 480 };
-const goodText = JSON.stringify({ answer: 'A beach.', scene: 'beach', hazard: 'none', hazard_confidence: 'high' });
+const goodText = JSON.stringify({ answer: 'A beach.', hazard: 'none' });
 
 function fakePort(overrides: Partial<LlamaPort> = {}) {
   const calls = { load: 0, complete: [] as { prompt: string; imageUri: string; maxTokens: number }[], stop: 0 };
@@ -51,10 +51,10 @@ describe('createLocalProvider', () => {
     const first = await provider.analyze(image, { language: 'zh' });
     await provider.analyze(image, { language: 'zh' });
     expect(first.provider).toBe('local');
-    expect(first.result.scene).toBe('beach');
+    expect(first.result.hazard).toBe('none');
     expect(calls.load).toBe(1);
     expect(calls.complete[0].imageUri).toBe('file:///cache/x.jpg');
-    expect(calls.complete[0].prompt).toContain('Simplified Chinese');
+    expect(calls.complete[0].prompt).toContain('简体中文');
   });
 
   it('shares a single load between concurrent first calls', async () => {

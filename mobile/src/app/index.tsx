@@ -222,8 +222,6 @@ export default function MainScreen() {
               {state.plan.descriptionWithheld ? '' : state.plan.description}
             </Text>
             {state.plan.uncertainty && <Text style={{ color: theme.muted }}>{state.plan.uncertainty}</Text>}
-            {state.plan.sceneLine && <Text style={{ color: theme.text }}>{state.plan.sceneLine}</Text>}
-            {state.plan.noHazardNote && <Text style={{ color: theme.muted }}>{state.plan.noHazardNote}</Text>}
             <Text style={{ color: theme.muted, fontSize: 12 }}>
               {t.providerLabel[state.provider]} · {t.elapsed(state.latencyMs / 1000)}
             </Text>

@@ -2,7 +2,7 @@ import { ProviderError, type EncodedImage } from '../../core/types';
 import { buildChatPayload, createRemoteProvider, testConnection } from '../remote';
 
 const image: EncodedImage = { uri: 'file:///x.jpg', base64: 'QUJD', width: 640, height: 480 };
-const goodContent = JSON.stringify({ answer: 'A quiet street.', scene: 'road', hazard: 'none', hazard_confidence: 'high' });
+const goodContent = JSON.stringify({ answer: 'A quiet street.', hazard: 'none' });
 
 function reply(status: number, body: unknown) {
   return Promise.resolve(new Response(typeof body === 'string' ? body : JSON.stringify(body), { status }));
@@ -36,7 +36,7 @@ describe('createRemoteProvider', () => {
     const out = await provider.analyze(image, { language: 'zh' });
 
     expect(out.provider).toBe('remote');
-    expect(out.result).toEqual({ answer: 'A quiet street.', scene: 'road', hazard: 'none', hazardConfidence: 'high' });
+    expect(out.result).toEqual({ answer: 'A quiet street.', hazard: 'none' });
     const [url, init] = calls[0];
     expect(url).toBe('https://gpu.example.com/v1/chat/completions');
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer secret-key');
@@ -45,7 +45,7 @@ describe('createRemoteProvider', () => {
     expect(body.temperature).toBe(0);
     expect(body.response_format.type).toBe('json_schema');
     expect(body.messages[0].content[1].image_url.url).toBe('data:image/jpeg;base64,QUJD');
-    expect(body.messages[0].content[0].text).toContain('Simplified Chinese');
+    expect(body.messages[0].content[0].text).toContain('简体中文');
   });
 
   it('sends no Authorization header when there is no key', async () => {

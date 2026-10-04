@@ -1,3 +1,5 @@
+import { TurboModuleRegistry } from 'react-native';
+
 import type { LlamaPort } from './local';
 
 type LlamaRn = typeof import('llama.rn');
@@ -18,6 +20,9 @@ export function createLlamaRnPort(paths: { model: string; mmproj: string }): Lla
   return {
     async load() {
       if (context) return;
+      // llama.rn looks its native half up with the non-throwing `get`; without it (Expo Go) initLlama would fail
+      // with an obscure TypeError, so say clearly what is missing.
+      if (!TurboModuleRegistry.get('RNLlama')) throw new Error('The on-device AI runtime is not part of this build.');
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { initLlama } = require('llama.rn') as LlamaRn;
       const created = await initLlama({

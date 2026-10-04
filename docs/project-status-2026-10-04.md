@@ -42,6 +42,23 @@
   `compare_local_remote.py`(并排对比,远程模式只接受校验过的公开/合成视频)。
 - 其他:`scripts/benchmark_scene_latency.py`、`prepare_cloud_testkit.py`、`cost_model.py` 等,见各文档。
 
+## 4b. 手机应用(2026-10-04 晚新增,用户要求自主推进)
+
+- 位置:`mobile/`(Expo SDK 57 / React Native 0.86 / TypeScript / expo-router)。设计与依据:
+  [specs/2026-10-04-mobile-app-design.md](superpowers/specs/2026-10-04-mobile-app-design.md);使用与 TestFlight 步骤:[mobile/README.md](../mobile/README.md)。
+- 已定决策(用户):建议性话术、按住说话、中英双语、AI 在本机/远程可切换(默认本机)、iOS 先 TestFlight。
+- ✅ 验证过:Jest 204 项、`tsc` 0 错误、`expo lint` 干净、`expo-doctor` 21/21、Metro 能打出 Android 和 iOS 的 JS 包;
+  **对真实 llama.cpp 模型跑了应用自己的提供方代码**(12 张公开图 × 中英)。
+- 🔧 **实测后修订的设计:** 中文必须用**中文提示词**(英文提示词要求中文 → 0% 汉字,中文提示词 → 89%);模型会写"无危险/环境安全"(11 条中 8 条),
+  所以加了安全断言拦截;场景标签约一半错误、置信度恒为 low → 删除 `scene`/`hazard_confidence` 和"友好场景提示";`hazard` 12/12 都是 `none`,
+  无法证明有效 → 危险提示标为实验性,且**取消所有宽慰话**。详见设计文档。
+- ⚠ Android 模拟器:应用能在 Expo Go 里加载,但本机内存不足,模拟器系统进程持续无响应,界面流程没走完。
+- ⚠ **没有验证:** iOS 任何运行时行为(本机是 Windows);语音识别、相机硬件变焦、朗读在真机上的表现;
+  **本机模型(llama.rn + MiniCPM-V 4.6)在手机上的速度和内存**;真实远程服务器的 HTTPS 部署;TestFlight 构建本身。
+- 需要用户做:Expo/Apple 账号登录、Bundle ID 确认(占位 `com.davyhan.visualhelper`)、`eas build` / `eas submit`。
+  `WUVA_APP\BACKUP` 里的 Apple `.p8` 私钥我没有读取或使用。
+- 不做:盲道/行走引导(P4),原因见设计文档 §6。
+
 ## 5. 未验证 / 未决
 
 - ⚠ 修复后的安装脚本没有在一台**全新**机器上从零跑过;只在已装好的盘上验证过重跑(18 秒)。

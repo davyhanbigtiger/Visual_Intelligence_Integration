@@ -1,0 +1,110 @@
+# Visual Helper(手机客户端)
+
+用手机相机"看周围",用语音操作并朗读结果。AI 可以在**手机本机**运行,也可以切换到你自己的**远程服务器**(例如我们测试过的 GPU 机器)。
+技术栈:Expo SDK 57、React Native 0.86、TypeScript、expo-router。设计决定与依据见
+[`docs/superpowers/specs/2026-10-04-mobile-app-design.md`](../docs/superpowers/specs/2026-10-04-mobile-app-design.md)。
+
+> **这不是安全设备,也不是导航工具。** 描述由 AI 生成,可能看错、漏看;单帧画面不能说明周围是否安全。
+> 它不能代替你自己的判断、白手杖、导盲犬或他人的帮助。盲道/行走引导**没有实现**,也不应从这个应用里推断出来。
+
+## 现在能做什么 / 验证到什么程度
+
+| 功能 | 状态 |
+|---|---|
+| 按住说话(中英),命令:看看周围 / 放大 / 缩小 / 还原 / 重复 / 停止 / 切换语言 | 命令解析:✅ 单元测试;语音识别本身:⚠ 未在真机验证 |
+| 相机硬件变焦(`expo-camera` 的 `zoom`) | ⚠ 未在真机验证 |
+| 朗读结果(系统语音),中英 | ⚠ 未在真机验证 |
+| **远程服务器**:OpenAI 兼容 `/v1/chat/completions`,可带访问密钥 | 请求/解析/超时/错误映射:✅ 单元测试;⚠ 真实服务器见下方"Android 模拟器验证" |
+| **本机 AI**:`llama.rn` 0.12.9 + MiniCPM-V 4.6(约 1.26 GB,首次下载) | 逻辑:✅ 单元测试;**模型在手机上的运行、速度、内存:⚠ 完全未验证** |
+| 话术安全:模型只描述并标注危险类别,提示语来自固定话术表;拦截命令式用语、**安全断言**("环境安全/无危险")和提示词泄漏;不说"安全"、不说"跑"、**不做任何宽慰** | ✅ 单元测试 + 对真实模型的实时测试(见下) |
+| **危险提示**(车辆/水边/落差/拥挤/动物/火烟/障碍) | ⚠ **实验性,召回率未知**:在 12 张公开图上模型一次都没有标出危险(包括有卡车的街景),我没有带真实危险的公开图可测。没有提示 ≠ 没有危险 |
+| "海滩→玩、好环境→享受"等**场景友好提示** | ❌ **已删除**:场景标签约一半是错的,不可靠 |
+| iOS | ⚠ 本机是 Windows,无法运行 iOS;JS 包可以打出来,其余等你的 TestFlight 测试 |
+
+## 用真实模型验证过的事(2026-10-04,MiniCPM-V 4.6 + llama.cpp,12 张公开 COCO 图,中英各一轮)
+
+实时测试 [`remote.live.test.ts`](src/providers/__tests__/remote.live.test.ts)(默认跳过,设 `LIVE_LLAMA_URL` 才运行)用应用自己的提供方代码对真实服务器发请求:
+
+| 项目 | 结果 |
+|---|---|
+| 结构化输出有效 | 英文 12/12,中文 11/12(1 次无效输出,应用会换尺寸重试一次) |
+| **中文回答** | 英文提示词要求"用中文回答" → 汉字占比 **0%**;**整段提示词用中文写 → 中位数 89%**。所以中文用中文提示词 |
+| **模型违反"不要做安全判断"** | 11 条中文回答里 **8 条**带"没有明显危险/无危险";拦截后朗读的内容里没有。英文 0 条 |
+| 提示词泄漏 | 早期提示词里写了"使用者视力不好",模型把它写进了描述 → 已从提示词中删除,并加拦截 |
+| 场景标签 | 约一半错误,**已删除**(原设计里的 `scene`、`hazard_confidence`) |
+| 危险标注 | 12/12 都是 `none`,**无法证明它有效** |
+| 速度 | 本机核显 llama.cpp 约 8 秒/次(含约 1.2 GB 的模型、较长的提示词);手机上的速度**没有测过** |
+
+另外:Android 模拟器里应用能在 Expo Go 中加载(中途发现并修复了一个"原生模块缺失时被报告成崩溃"的问题),
+但这台机器内存不足(可用 < 1 GB),模拟器系统进程持续"无响应",没能走完界面流程,所以**界面层面的端到端没有验证**。
+
+## 开发(Windows)
+
+```powershell
+cd mobile
+$env:Path = "C:\Windows\System32;" + $env:Path   # 重要:见下方"已知坑"
+npm install
+npm test            # Jest
+npm run typecheck   # tsc --noEmit
+npm run lint        # expo lint
+npx expo-doctor
+npx expo export --platform android --output-dir ..\outputs\mobile-export-android   # 打包自检
+```
+
+**已知坑:** 这台机器的 `PATH` 里 Git 自带的 GNU `tar` 排在 Windows 自带 `tar` 前面,`llama.rn` 安装后脚本解压原生库时会把 `C:\...` 当成远程主机而失败
+(`Cannot connect to C`)。安装前把 `C:\Windows\System32` 放到 `PATH` 最前面即可。EAS 云构建在 Linux 上,不受影响。
+`llama.rn` 在安装时会从它的 GitHub Release 下载预编译的原生库(带 SHA-256 校验);偶尔 GitHub 返回 500,重试即可。
+
+## 运行
+
+- **原生模块(语音识别、`llama.rn`)不能用 Expo Go。** 完整功能需要开发构建:`npx expo run:android`(本机,需要 Android SDK + JDK 17/21)或 `eas build --profile development`。
+- 代码对这两个原生模块是**惰性加载**的:在没有它们的构建里(例如 Expo Go),应用照常启动,语音按钮提示"不支持",本机模式提示"模型未准备好"。
+
+## iOS 与 TestFlight(需要你来做的部分)
+
+我无法替你完成账号、签名和付费相关步骤。准备好后,在 `mobile` 目录:
+
+```powershell
+npx eas-cli@latest login          # 你的 Expo 账号
+npx eas-cli@latest init           # 创建 EAS 项目,会把 projectId 写入配置
+npx eas-cli@latest build -p ios --profile production    # 云构建;首次会让你登录 Apple 账号并生成/选择证书
+npx eas-cli@latest submit -p ios --latest               # 上传到 App Store Connect,之后在 TestFlight 里添加测试员
+```
+
+- **Bundle ID:** `app.json` 里是占位的 `com.davyhan.visualhelper`(Android 包名同)。Bundle ID 全球唯一,如果被占用或你想用自己的域名,先改 `ios.bundleIdentifier` 和 `android.package`,再构建。App Store Connect 里需要先有对应 Bundle ID 的 App 记录。
+- **首个 TestFlight 包用 `production` 配置。** `production-memory` 配置会额外给 iOS 加"增加内存上限"等权限(让大模型更不容易被系统杀掉),它要求你的 App ID 已开通对应能力,否则签名可能失败——所以默认关闭,`production` 能成功后再试。
+- **`WUVA_APP\BACKUP\AuthKey_*.p8`** 是你的 Apple API 私钥,我没有读取或使用它。如果要用它做免登录提交,请按 EAS 文档配置,并且**不要放进任何 Git 仓库**(`.gitignore` 已忽略 `*.p8`)。
+- 构建在云端的 Linux 上进行,所以 Windows 上 `iOS` 无法本地运行/调试;iOS 上的行为(相机、语音、`llama.rn`、内存)要靠 TestFlight 包来验证。
+
+## 远程服务器
+
+应用只要求一个 **OpenAI 兼容**的 `POST {地址}/v1/chat/completions`,支持图片(`image_url`,data URI)和 `response_format: json_schema`。
+我们验证过的是 llama.cpp 的 `llama-server`(同一个服务器配置在 [`scripts/cloud/`](../scripts/cloud/))。
+
+- **访问密钥:** `llama-server` 启动时加 `--api-key <密钥>` 即可要求 `Authorization: Bearer`;应用把密钥存在系统钥匙串里。
+- **HTTPS:** iOS 默认禁止明文 http;公网地址必须 https(应用也会拒绝公网 http 地址)。局域网地址(`192.168.x.x`、`10.x`、`*.local` 等)可以用 http。
+  最简单的做法是在服务器前放一个自动签发证书的反向代理(如 Caddy),再配合 `--api-key`;或者用 Tailscale 之类的私网。**这部分没有在真实服务器上验证过**,等你下次开 GPU 实例时一起测。
+- **隐私:** 切到"远程服务器"时必须你点"同意"(画面会发往你设置的服务器);默认是本机模式。应用不会在远程出错时悄悄回退到本机,也不会反过来。
+- 老的 Ollama 服务器:Ollama 也提供 `/v1/chat/completions`,但我们实测它对少数"图片×尺寸"组合会输出乱码;应用遇到无效输出会换尺寸重试一次,仍失败就如实告知。
+
+## 目录
+
+```
+src/
+  core/        类型、结构化输出 schema、提示词、结果解析
+  safety/      命令式用语拦截、固定话术、播报策略
+  voice/       命令解析(纯函数)、识别/朗读封装
+  camera/      变焦档位
+  image/       缩放与 JPEG 编码
+  settings/    设置模型、URL 校验、钥匙串/本地存储
+  providers/   remote、local(llama.rn)、模型下载、提供方选择
+  controller/  一次分析的流程编排
+  i18n/        中英文案
+  state/       应用级状态
+  app/         expo-router 路由(主界面、设置)
+```
+
+## 许可证
+
+仓库根目录的 `LICENSE`(Apache-2.0)适用于本项目自己的代码。`mobile/LICENSE`(MIT,版权属于 Expo)是脚手架模板自带的许可文件,
+只对应模板生成的文件(如 `assets/` 里的默认图标)。

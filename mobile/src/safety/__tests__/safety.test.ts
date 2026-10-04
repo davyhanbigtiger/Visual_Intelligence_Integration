@@ -1,9 +1,9 @@
 import type { SceneResult } from '../../core/types';
-import { guardDescription, isCommandLike } from '../guard';
+import { guardDescription, isCommandLike, isSafetyClaim } from '../guard';
 import { PHRASES } from '../phrases';
 import { planSpeech } from '../policy';
 
-const base: SceneResult = { answer: 'A road with parked cars.', scene: 'road', hazard: 'none', hazardConfidence: 'high' };
+const base: SceneResult = { answer: 'A road with parked cars.', hazard: 'none' };
 
 describe('isCommandLike', () => {
   it.each([
@@ -22,6 +22,8 @@ describe('isCommandLike', () => {
     '快跑',
     '前面有车。小心!',
     '往左走',
+    '人物很多，需小心',
+    '当心台阶',
   ])('flags command-like text: %s', (text) => {
     expect(isCommandLike(text)).toBe(true);
   });
@@ -39,37 +41,81 @@ describe('isCommandLike', () => {
   });
 });
 
+describe('isSafetyClaim', () => {
+  it.each([
+    '环境安全。',
+    '没有可见危险或障碍。',
+    '无危险。',
+    '可以放心。',
+    'It looks safe here.',
+    'There is no danger.',
+    'Nothing dangerous is visible.',
+    'The path is harmless.',
+    'No obstacles ahead.',
+  ])('flags safety assertions: %s', (text) => {
+    expect(isSafetyClaim(text)).toBe(true);
+  });
+
+  it.each(['A bear on the grass.', '有熊和草地。', 'A kitchen with a refrigerator and a stove.', '路边停着一辆卡车。'])(
+    'does not flag plain descriptions: %s',
+    (text) => {
+      expect(isSafetyClaim(text)).toBe(false);
+    },
+  );
+});
+
 describe('guardDescription', () => {
   it('returns trimmed descriptive text and withholds commands and empty text', () => {
     expect(guardDescription('  A quiet street.  ')).toBe('A quiet street.');
     expect(guardDescription('Go left.')).toBeNull();
     expect(guardDescription('   ')).toBeNull();
   });
+
+  it('keeps the useful sentences and drops only the unsafe ones (real model output, 2026-10-04)', () => {
+    expect(guardDescription('环境清晰，有熊和草地。没有可见危险或障碍。')).toBe('环境清晰，有熊和草地。');
+    expect(guardDescription('环境为室内，有毛绒玩具。物体清晰可见，无危险。视力强，环境安全。清晰可见的物体和空间。')).toBe(
+      '环境为室内，有毛绒玩具。清晰可见的物体和空间。',
+    );
+    expect(guardDescription('The scene shows a tennis court. It is safe. Players are visible.')).toBe(
+      'The scene shows a tennis court. Players are visible.',
+    );
+  });
+
+  it('drops sentences that leak the prompt about eyesight', () => {
+    expect(guardDescription('环境是户外网球场，人物众多。视力可能不佳，需小心。')).toBe('环境是户外网球场，人物众多。');
+    expect(guardDescription('A park. For a visually impaired person it is open.')).toBe('A park.');
+  });
+
+  it('withholds everything when every sentence is unsafe', () => {
+    expect(guardDescription('环境安全。无危险。')).toBeNull();
+    expect(guardDescription('Go left. It is safe.')).toBeNull();
+  });
 });
 
 describe('fixed phrases', () => {
   const all = (lang: 'zh' | 'en') => {
     const p = PHRASES[lang];
-    return [...Object.values(p.hazard), ...Object.values(p.scene), p.unclear, p.uncertainHazard, p.noHazardNote, p.disclaimer, p.withheld];
+    return [...Object.values(p.hazard), p.unclear, p.disclaimer, p.withheld];
   };
 
   it.each(['zh', 'en'] as const)('none of the %s phrases is command-like', (lang) => {
     for (const phrase of all(lang)) expect(isCommandLike(phrase)).toBe(false);
   });
 
-  it.each(['zh', 'en'] as const)('no %s hazard or scene phrase claims safety or tells the user to run', (lang) => {
-    const p = PHRASES[lang];
-    for (const phrase of [...Object.values(p.hazard), ...Object.values(p.scene)]) {
+  it.each(['zh', 'en'] as const)('no %s hazard phrase claims safety or tells the user to run', (lang) => {
+    for (const phrase of Object.values(PHRASES[lang].hazard)) {
       expect(phrase).not.toMatch(/safe|安全|\brun\b|跑|逃/i);
     }
   });
 
-  it('only mentions safety in the no-hazard note, and there only to deny it', () => {
-    expect(PHRASES.zh.noHazardNote).toContain('不代表安全');
-    expect(PHRASES.en.noHazardNote).toContain('does not mean it is safe');
+  it('tells the user that hazard alerts are experimental and that silence is not a safety signal', () => {
+    expect(PHRASES.zh.disclaimer).toContain('实验性');
+    expect(PHRASES.zh.disclaimer).toContain('没有提示不代表没有危险');
+    expect(PHRASES.en.disclaimer).toContain('experimental');
+    expect(PHRASES.en.disclaimer).toContain('no alert does not mean there is no danger');
   });
 
-  it('has a phrase for every hazard category in both languages', () => {
+  it('has a phrase for every actionable hazard category in both languages', () => {
     const zh = Object.keys(PHRASES.zh.hazard).sort();
     expect(Object.keys(PHRASES.en.hazard).sort()).toEqual(zh);
     expect(zh).toEqual(['animal', 'crowd', 'fire_smoke', 'height_drop', 'obstacle', 'vehicle', 'water_edge']);
@@ -77,39 +123,31 @@ describe('fixed phrases', () => {
 });
 
 describe('planSpeech', () => {
-  it('speaks a confident hazard alert before the description', () => {
+  it('speaks a hazard alert before the description', () => {
     const plan = planSpeech({ ...base, hazard: 'vehicle' }, 'zh', { firstInSession: false });
     expect(plan.alert).toBe(PHRASES.zh.hazard.vehicle);
     expect(plan.spoken[0]).toBe(PHRASES.zh.hazard.vehicle);
     expect(plan.spoken[1]).toBe('A road with parked cars.');
-    expect(plan.sceneLine).toBeNull();
   });
 
-  it('does not alert on a low-confidence hazard, and says it is unsure instead', () => {
-    const plan = planSpeech({ ...base, hazard: 'water_edge', hazardConfidence: 'low' }, 'en', { firstInSession: false });
-    expect(plan.alert).toBeNull();
-    expect(plan.uncertainty).toBe(PHRASES.en.uncertainHazard);
-    expect(plan.noHazardNote).toBeNull();
-  });
-
-  it('says it cannot judge when the image is unclear and never reassures', () => {
-    const plan = planSpeech({ ...base, hazard: 'unclear', hazardConfidence: 'high' }, 'zh', { firstInSession: false });
+  it('says it cannot judge when the image is unclear', () => {
+    const plan = planSpeech({ ...base, hazard: 'unclear' }, 'zh', { firstInSession: false });
     expect(plan.uncertainty).toBe(PHRASES.zh.unclear);
-    expect(plan.noHazardNote).toBeNull();
-    expect(plan.spoken.join(' ')).not.toMatch(/安全/);
+    expect(plan.alert).toBeNull();
   });
 
-  it('adds a friendly scene line only when there is no alert or uncertainty', () => {
-    const beach = planSpeech({ ...base, scene: 'beach' }, 'en', { firstInSession: false });
-    expect(beach.sceneLine).toBe(PHRASES.en.scene.beach);
-    const beachWithHazard = planSpeech({ ...base, scene: 'beach', hazard: 'water_edge' }, 'en', { firstInSession: false });
-    expect(beachWithHazard.sceneLine).toBeNull();
-  });
-
-  it('shows (does not speak) a no-hazard note that never says "safe"', () => {
-    const plan = planSpeech({ ...base, scene: 'other' }, 'en', { firstInSession: false });
-    expect(plan.noHazardNote).toBe(PHRASES.en.noHazardNote);
+  it('never reassures when no hazard is reported: only the description is spoken', () => {
+    const plan = planSpeech(base, 'en', { firstInSession: false });
+    expect(plan.alert).toBeNull();
+    expect(plan.uncertainty).toBeNull();
     expect(plan.spoken).toEqual(['A road with parked cars.']);
+    expect(plan.spoken.join(' ')).not.toMatch(/safe|danger/i);
+  });
+
+  it('strips an unsafe sentence from the description but keeps the rest', () => {
+    const plan = planSpeech({ answer: '有熊和草地。环境安全。', hazard: 'none' }, 'zh', { firstInSession: false });
+    expect(plan.spoken).toEqual(['有熊和草地。']);
+    expect(plan.descriptionWithheld).toBe(false);
   });
 
   it('withholds a command-like description and speaks the fixed notice instead', () => {

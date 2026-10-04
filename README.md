@@ -53,6 +53,14 @@ llama.cpp 参数、更多模型等仍未穷尽）。默认行为本轮未改。
 按次计费便宜。详见 [T4 实测与审计](docs/cloud-t4-results-2026-10-04.md)；测试流程见
 [云 GPU 测试手册](docs/cloud-gpu-test-runbook-2026-10-03.md)（只用公开/合成媒体，没有上传摄像头画面或个人录像）。
 
+## 手机应用（Expo / React Native，2026-10-04 起）
+
+`mobile/` 是手机客户端：相机 + 按住说话（中英）+ 朗读 + 硬件变焦，AI 可在**手机本机**（`llama.rn` + MiniCPM-V 4.6）或
+**远程服务器**（OpenAI 兼容接口，如 llama-server）之间切换，默认本机。话术采用"建议性"规则：模型只做分类，提示语来自固定话术表，
+不说"快跑"、不给路线、不说"安全"；盲道/行走引导**没有实现**。iOS 先走 TestFlight（需要你的 Apple/Expo 账号，见
+[mobile/README.md](mobile/README.md)）；本机是 Windows，iOS 无法本地运行，**手机上的行为（尤其本机模型的速度与内存）尚未验证**。
+设计与依据见 [设计文档](docs/superpowers/specs/2026-10-04-mobile-app-design.md)。
+
 ## 本地运行（Windows PowerShell）
 
 当前优先目标是**环境概况与低延迟**：识别大致场景、主要人物、显眼物体和

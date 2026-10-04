@@ -1,3 +1,5 @@
+import { requireOptionalNativeModule } from 'expo';
+
 import type { Language } from '../core/types';
 import { COMMAND_HINTS, SPEECH_LOCALE } from './language';
 
@@ -25,6 +27,9 @@ export interface Recognizer {
 type NativeModule = typeof import('expo-speech-recognition').ExpoSpeechRecognitionModule;
 
 function loadModule(): NativeModule | null {
+  // Probe first: requiring a package whose native half is missing (Expo Go, or a build made without the plugin)
+  // throws, and in development that is reported as a crash even if we catch it. The optional lookup returns null.
+  if (!requireOptionalNativeModule('ExpoSpeechRecognition')) return null;
   try {
     // Loaded lazily so a build without this native module still starts.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
