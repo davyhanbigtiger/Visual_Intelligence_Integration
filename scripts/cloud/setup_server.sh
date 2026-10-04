@@ -75,7 +75,9 @@ if ! tar --help 2>&1 | grep -q zstd && ! command -v zstd >/dev/null; then
   echo "zstd is needed to unpack the Ollama archive: apt-get install -y zstd (root) or ask for an image with zstd" >&2; exit 1
 fi
 for host in github.com huggingface.co registry.ollama.ai; do
-  curl -fsI --max-time 15 "https://$host" >/dev/null && echo "reachable: $host" || echo "WARNING: cannot reach $host"
+  # Any HTTP status means the host is reachable (registry.ollama.ai answers 404 on /); only 000 is a failure.
+  code="$(curl -s -o /dev/null --max-time 15 -w '%{http_code}' "https://$host" || true)"
+  case "$code" in 000|"") echo "WARNING: cannot reach $host" ;; *) echo "reachable: $host (HTTP $code)" ;; esac
 done
 
 step "Ollama ${OLLAMA_VERSION}"
