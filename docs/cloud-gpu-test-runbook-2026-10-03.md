@@ -61,8 +61,13 @@ ssh-keygen -t ed25519 -f ~/.ssh/vi_cloud -C "visualintel-cloud-test"
 - **地域/镜像:** 若实例在国内,github.com / huggingface.co / registry.ollama.ai 可能很慢或不通
   (未核实)。`setup_server.sh` 的下载地址可用环境变量 `OLLAMA_URL`、`LLAMA_BASE`、`HF_BASE` 换成镜像;
   二进制和 GGUF 仍按固定 sha256 校验,但 `ollama pull` 的模型不在校验范围内。
-- **llama-server 起不来不算安装失败:** 预编译 CUDA 包是否含 T4 的 sm_75 内核我没核实;若启动失败,脚本现在会
-  打印日志尾部并继续,只用 Ollama 路径测试(`--api ollama`)。
+- **镜像/驱动(用户下单页截图,2026-10-03):** Ubuntu Server 24.04 LTS、自动安装 GPU 驱动 580.126.20、CUDA 13.0.2、
+  cuDNN 9.20.0。Ollama 文档写明支持计算能力 5.0+ 且驱动 ≥ 550(🏷 docs.ollama.com/gpu),T4(7.5)在内,驱动 580 满足。
+  llama.cpp 请用默认的 **CUDA 12.8 包**(`LLAMA_CUDA=12.8`),不要选 13.4:驱动报告的是 CUDA 13.0,
+  13.4 的包可能需要更新的驱动(推断,未验证)。llama.cpp master 的 CUDA 默认架构列表含 `75-virtual`
+  (🏷 ggml/src/ggml-cuda/CMakeLists.txt;b11146 本身未逐行核对),也就是 T4 靠 PTX 即时编译运行:
+  **首次加载模型会慢一些**,计时只统计热身之后的请求,首次加载时间另行记录。
+- **llama-server 起不来不算安装失败:** 若启动失败,脚本会打印日志尾部并继续,只用 Ollama 路径测试(`--api ollama`)。
 - 价格参考(🏷 runpod.io/pricing,2026-10-03 读取,USD/小时):RTX 4090 社区云 0.34、安全云 0.74,L4 0.44–0.49。
   其他平台未核实。**我无法控制计费**;预算上限 100 CAD/月只是调研约束,不是对具体消费的授权。
   估算:跑 2 小时按 0.74 USD/小时约 1.5 USD(≈ 2.1 CAD,汇率 1.4246),**加上存储/快照费**;
