@@ -1,31 +1,53 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
-    "version": "1.0.0",
+    "name": "Visual Helper",
+    "slug": "visual-helper",
+    "scheme": "visualhelper",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.davyhan.visualhelper",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocalNetworkUsageDescription": "Used to reach an AI server on your local network, only if you choose one in Settings.",
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
     },
     "android": {
+      "package": "com.davyhan.visualhelper",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"]
     },
     "plugins": [
       "expo-router",
-      "expo-speech-recognition",
       "expo-secure-store",
-      "expo-build-properties"
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Visual Helper uses the camera to look at your surroundings when you ask it to.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Visual Helper listens only while you hold the talk button, to understand your voice commands.",
+          "speechRecognitionPermission": "Visual Helper uses speech recognition to understand your voice commands."
+        }
+      ]
     ]
   }
 }

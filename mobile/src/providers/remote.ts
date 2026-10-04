@@ -106,7 +106,7 @@ export function createRemoteProvider(options: RemoteOptions): VisionProvider {
       if (!response.ok) {
         throw new ProviderError('server', `Server error ${response.status}: ${snippet(body)}`, response.status);
       }
-      let data: { choices?: Array<{ message?: { content?: unknown }; finish_reason?: string }> };
+      let data: { choices?: { message?: { content?: unknown }; finish_reason?: string }[] };
       try {
         data = JSON.parse(body);
       } catch {

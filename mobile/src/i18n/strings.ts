@@ -19,6 +19,10 @@ export interface Strings {
   listening: string;
   heard: string;
   notUnderstood: string;
+  notUnderstoodShort: string;
+  languageChanged: string;
+  allowCamera: string;
+  providerLabel: { local: string; remote: string };
   elapsed: (seconds: number) => string;
   zoomLabel: (percent: number) => string;
   cameraDenied: string;
@@ -53,6 +57,10 @@ export const STRINGS: Record<Language, Strings> = {
     listening: '正在听…',
     heard: '听到',
     notUnderstood: '没听懂,可以说:看看周围、放大、缩小、还原、重复、停止。',
+    notUnderstoodShort: '没听懂。',
+    languageChanged: '已切换到中文。',
+    allowCamera: '允许使用相机',
+    providerLabel: { local: '本机', remote: '远程' },
     elapsed: (s) => `耗时 ${s.toFixed(1)} 秒`,
     zoomLabel: (p) => `变焦 ${p}%`,
     cameraDenied: '没有相机权限,请在系统设置中允许使用相机。',
@@ -96,6 +104,10 @@ export const STRINGS: Record<Language, Strings> = {
     listening: 'Listening…',
     heard: 'Heard',
     notUnderstood: 'I did not understand. Try: look around, zoom in, zoom out, reset, repeat, stop.',
+    notUnderstoodShort: 'Sorry, I did not understand.',
+    languageChanged: 'Switched to English.',
+    allowCamera: 'Allow camera',
+    providerLabel: { local: 'On-device', remote: 'Remote' },
     elapsed: (s) => `${s.toFixed(1)} s`,
     zoomLabel: (p) => `Zoom ${p}%`,
     cameraDenied: 'Camera permission is off. Please allow it in system settings.',

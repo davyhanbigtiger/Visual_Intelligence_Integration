@@ -55,7 +55,7 @@ describe('createRemoteProvider', () => {
   });
 
   it('maps HTTP and body problems to the right error kinds', async () => {
-    const cases: Array<[string, () => Promise<Response>]> = [
+    const cases: [string, () => Promise<Response>][] = [
       ['auth', () => reply(401, 'no')],
       ['auth', () => reply(403, 'no')],
       ['server', () => reply(500, 'boom')],

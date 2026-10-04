@@ -19,7 +19,7 @@ export function normalizeUtterance(raw: string): string {
     .trim();
 }
 
-const RULES: ReadonlyArray<{ command: VoiceCommand; pattern: RegExp }> = [
+const RULES: readonly { command: VoiceCommand; pattern: RegExp }[] = [
   // Stop must win over everything, including negations such as "别说了".
   { command: { type: 'stop' }, pattern: /(停止|别说了|不要说了|不说了|安静|闭嘴|^停$|\bstop\b|\bquiet\b|\bshut up\b|\bbe quiet\b)/ },
   { command: { type: 'language', language: 'en' }, pattern: /(切换(到)?英[文语]|说英[文语]|用英[文语]|\bswitch to english\b|\bspeak english\b|^english$)/ },

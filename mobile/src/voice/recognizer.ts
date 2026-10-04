@@ -38,7 +38,7 @@ function loadModule(): NativeModule | null {
 /** Push-to-talk wrapper around expo-speech-recognition (iOS SFSpeechRecognizer / Android SpeechRecognizer). */
 export function createRecognizer(): Recognizer {
   const mod = loadModule();
-  let subscriptions: Array<{ remove(): void }> = [];
+  let subscriptions: { remove(): void }[] = [];
 
   const cleanup = () => {
     subscriptions.forEach((s) => s.remove());

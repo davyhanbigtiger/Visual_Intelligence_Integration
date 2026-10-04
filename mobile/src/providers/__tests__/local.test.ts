@@ -16,7 +16,7 @@ const image: EncodedImage = { uri: 'file:///cache/x.jpg', base64: 'QUJD', width:
 const goodText = JSON.stringify({ answer: 'A beach.', scene: 'beach', hazard: 'none', hazard_confidence: 'high' });
 
 function fakePort(overrides: Partial<LlamaPort> = {}) {
-  const calls = { load: 0, complete: [] as Array<{ prompt: string; imageUri: string; maxTokens: number }>, stop: 0 };
+  const calls = { load: 0, complete: [] as { prompt: string; imageUri: string; maxTokens: number }[], stop: 0 };
   const port: LlamaPort = {
     async load() {
       calls.load += 1;

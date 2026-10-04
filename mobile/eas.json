@@ -1,0 +1,30 @@
+{
+  "cli": {
+    "version": ">= 24.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": { "ALLOW_CLEARTEXT_ANDROID": "1" }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": { "ALLOW_CLEARTEXT_ANDROID": "1" }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": { "ALLOW_CLEARTEXT_ANDROID": "0" }
+    },
+    "production-memory": {
+      "extends": "production",
+      "env": { "LLAMA_MEMORY_ENTITLEMENTS": "1" }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
