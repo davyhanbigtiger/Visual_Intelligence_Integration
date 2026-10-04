@@ -2,7 +2,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { useKeepAwake } from 'expo-keep-awake';
 import { router } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -32,6 +32,19 @@ export default function MainScreen() {
   const [notice, setNotice] = useState('');
   const [heard, setHeard] = useState('');
   const [listening, setListening] = useState(false);
+
+  // Seconds spent on the current request. It makes a long wait visibly alive (an on-device model can take minutes).
+  const busy = state.phase === 'capturing' || state.phase === 'thinking';
+  const [waited, setWaited] = useState(0);
+  useEffect(() => {
+    if (!busy) return;
+    const start = Date.now();
+    const id = setInterval(() => setWaited(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => {
+      clearInterval(id);
+      setWaited(0);
+    };
+  }, [busy]);
 
   const speaker = useMemo(() => createSpeaker(), []);
   const recognizer = useMemo(() => createRecognizer(), []);
@@ -169,7 +182,6 @@ export default function MainScreen() {
     );
   }
 
-  const busy = state.phase === 'capturing' || state.phase === 'thinking';
   const modeLabel = settings.mode === 'local' ? t.modeLocal : t.modeRemote;
 
   return (
@@ -198,6 +210,7 @@ export default function MainScreen() {
         {busy && (
           <View style={styles.overlay}>
             <Text style={styles.overlayText}>{state.phase === 'capturing' ? t.capturing : t.thinking}</Text>
+            {waited >= 3 && <Text style={styles.overlayHint}>{t.waited(waited)}</Text>}
           </View>
         )}
       </View>
@@ -210,6 +223,9 @@ export default function MainScreen() {
           </Text>
         ) : null}
         {notice ? <Text style={{ color: theme.warn }}>{notice}</Text> : null}
+        {state.phase === 'thinking' && state.provider === 'local' && waited >= 8 && (
+          <Text style={{ color: theme.muted }}>{t.localSlowHint}</Text>
+        )}
         {state.phase === 'error' && (
           <Text accessibilityRole="alert" style={[styles.body, { color: theme.danger }]}>
             {state.message}
@@ -241,12 +257,11 @@ export default function MainScreen() {
         <View style={styles.row}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t.analyze}
-            disabled={busy}
-            onPress={() => void getController().analyze()}
-            style={[styles.bigButton, { flex: 1, backgroundColor: busy ? theme.border : theme.primary }]}
+            accessibilityLabel={busy ? t.cancel : t.analyze}
+            onPress={() => (busy ? getController().cancel() : void getController().analyze())}
+            style={[styles.bigButton, { flex: 1, backgroundColor: busy ? theme.danger : theme.primary }]}
           >
-            <Text style={[styles.bigButtonText, { color: theme.primaryText }]}>{t.analyze}</Text>
+            <Text style={[styles.bigButtonText, { color: theme.primaryText }]}>{busy ? t.cancel : t.analyze}</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -289,6 +304,7 @@ const styles = StyleSheet.create({
   cameraBox: { height: 280, marginHorizontal: 12, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
   overlayText: { color: '#fff', fontSize: 20, fontWeight: '600' },
+  overlayHint: { color: '#fff', fontSize: 14, marginTop: 6 },
   result: { flex: 1 },
   card: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 6 },
   alert: { fontSize: 18, fontWeight: '700' },

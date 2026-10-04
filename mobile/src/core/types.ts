@@ -58,6 +58,7 @@ export type ProviderErrorKind =
   | 'invalid_output'
   | 'not_ready'
   | 'not_configured'
+  | 'too_slow'
   | 'cancelled';
 
 export class ProviderError extends Error {

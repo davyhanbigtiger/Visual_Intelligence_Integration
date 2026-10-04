@@ -15,6 +15,9 @@ export interface Strings {
   modeLocal: string;
   modeRemote: string;
   thinking: string;
+  /** Shown under "thinking" while a request runs, so a long wait is visibly alive and can be cancelled. */
+  waited: (seconds: number) => string;
+  localSlowHint: string;
   capturing: string;
   listening: string;
   heard: string;
@@ -53,6 +56,8 @@ export const STRINGS: Record<Language, Strings> = {
     modeLocal: '本机 AI',
     modeRemote: '远程服务器',
     thinking: '正在看…',
+    waited: (s) => `已等待 ${s} 秒`,
+    localSlowHint: '本机 AI 首次使用要先载入模型,较慢的设备可能要一两分钟。可以点"取消"。',
     capturing: '正在拍照…',
     listening: '正在听…',
     heard: '听到',
@@ -79,6 +84,7 @@ export const STRINGS: Record<Language, Strings> = {
       invalid_output: '这次没有得到可靠的结果,我不会猜测。请再试一次。',
       not_ready: '本机 AI 还没准备好,请先在设置里下载模型。',
       not_configured: '远程服务器还没设置好,请在设置里填写地址并确认同意。',
+      too_slow: '本机 AI 在这台设备上太慢,已停止。可以在设置里改用远程服务器。',
       cancelled: '已取消。',
       camera: '拍照失败,请检查相机。',
       unknown: '出了点问题,请再试一次。',
@@ -100,6 +106,8 @@ export const STRINGS: Record<Language, Strings> = {
     modeLocal: 'On-device AI',
     modeRemote: 'Remote server',
     thinking: 'Looking…',
+    waited: (s) => `Waited ${s} s`,
+    localSlowHint: 'On-device AI loads its model on first use, which can take a minute or two on slower devices. You can tap Cancel.',
     capturing: 'Taking a picture…',
     listening: 'Listening…',
     heard: 'Heard',
@@ -126,6 +134,7 @@ export const STRINGS: Record<Language, Strings> = {
       invalid_output: 'I did not get a reliable result this time, and I will not guess. Please try again.',
       not_ready: 'On-device AI is not ready. Please download the model in settings first.',
       not_configured: 'The remote server is not set up yet. Please enter its address and agree in settings.',
+      too_slow: 'On-device AI is too slow on this device, so it was stopped. You can switch to a remote server in settings.',
       cancelled: 'Cancelled.',
       camera: 'Could not take a picture. Please check the camera.',
       unknown: 'Something went wrong. Please try again.',

@@ -142,8 +142,11 @@ export default function SettingsScreen() {
           <Field label={s.serverAddress} theme={theme}>
             <TextInput
               value={urlText}
-              onChangeText={setUrlText}
-              onEndEditing={() => void app.update({ remoteUrl: urlText })}
+              onChangeText={(text) => {
+                setUrlText(text);
+                // Saved as you type: onEndEditing alone lost the address when you left the screen with the field still focused.
+                void app.update({ remoteUrl: text });
+              }}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
@@ -158,8 +161,10 @@ export default function SettingsScreen() {
           <Field label={s.apiKey} theme={theme}>
             <TextInput
               value={keyText}
-              onChangeText={setKeyText}
-              onEndEditing={() => void app.setApiKey(keyText)}
+              onChangeText={(text) => {
+                setKeyText(text);
+                void app.setApiKey(text);
+              }}
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
@@ -170,8 +175,10 @@ export default function SettingsScreen() {
           <Field label={s.modelName} theme={theme}>
             <TextInput
               value={modelText}
-              onChangeText={setModelText}
-              onEndEditing={() => void app.update({ remoteModel: modelText })}
+              onChangeText={(text) => {
+                setModelText(text);
+                void app.update({ remoteModel: text });
+              }}
               autoCapitalize="none"
               autoCorrect={false}
               style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}

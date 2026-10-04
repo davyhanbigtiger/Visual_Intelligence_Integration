@@ -124,6 +124,55 @@ describe('createLocalProvider', () => {
     expect(calls.stop).toBe(1);
   });
 
+  it('gives up after the time limit: stops the runtime and reports too_slow', async () => {
+    const { port, calls } = fakePort({ complete: () => new Promise<string>(() => undefined) });
+    const provider = createLocalProvider(port, () => true, { timeoutMs: 30 });
+    expect(await kindOf(provider.analyze(image, { language: 'en' }))).toBe('too_slow');
+    expect(calls.stop).toBe(1);
+  });
+
+  it('counts a slow model load against the same time limit, and a later call can still use the finished load', async () => {
+    let finishLoad: () => void = () => undefined;
+    let loads = 0;
+    const { port } = fakePort({
+      load: () => {
+        loads += 1;
+        return new Promise<void>((resolve) => (finishLoad = resolve));
+      },
+    });
+    const provider = createLocalProvider(port, () => true, { timeoutMs: 30 });
+    expect(await kindOf(provider.analyze(image, { language: 'en' }))).toBe('too_slow');
+    finishLoad();
+    expect(await kindOf(provider.analyze(image, { language: 'en' }))).toBe('resolved');
+    expect(loads).toBe(1);
+  });
+
+  it('does not report too_slow for a fast result, and the timer does not keep running', async () => {
+    jest.useFakeTimers();
+    try {
+      const { port } = fakePort();
+      const provider = createLocalProvider(port, () => true, { timeoutMs: 1000 });
+      await provider.analyze(image, { language: 'en' });
+      expect(jest.getTimerCount()).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('reports cancelled, not too_slow, when the user cancels before the limit', async () => {
+    const controller = new AbortController();
+    let rejectCompletion: (e: Error) => void = () => undefined;
+    const { port } = fakePort({
+      complete: () => new Promise<string>((_resolve, reject) => (rejectCompletion = reject)),
+      stop: async () => rejectCompletion(new Error('stopped')),
+    });
+    const provider = createLocalProvider(port, () => true, { timeoutMs: 5000 });
+    const pending = provider.analyze(image, { language: 'en', signal: controller.signal });
+    await new Promise((r) => setTimeout(r, 0));
+    controller.abort();
+    expect(await kindOf(pending)).toBe('cancelled');
+  });
+
   it('refuses to start when already aborted', async () => {
     const controller = new AbortController();
     controller.abort();

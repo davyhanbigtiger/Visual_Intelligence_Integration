@@ -39,10 +39,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const update = useCallback(async (patch: Partial<Settings>) => {
-    const next = await settingsStore.save({ ...settingsRef.current, ...patch });
-    settingsRef.current = next;
-    setSettings(next);
+  // Updates run one at a time, each on top of the previous result: the settings fields save as you type, so two
+  // updates can overlap, and an unserialised second one would be built on the old value and drop the first one's change.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
+  const update = useCallback((patch: Partial<Settings>): Promise<void> => {
+    const run = queue.current.then(async () => {
+      const next = await settingsStore.save({ ...settingsRef.current, ...patch });
+      settingsRef.current = next;
+      setSettings(next);
+    });
+    queue.current = run.catch(() => undefined);
+    return run;
   }, []);
 
   const setApiKey = useCallback(async (value: string) => {
