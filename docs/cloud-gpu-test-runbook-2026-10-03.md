@@ -13,7 +13,8 @@
 |---|---|---|
 | 测试媒体(24 张 COCO val2017 图、4 个 NASA 公开视频、6 张合成圆图 + 1 个合成运动视频,附标注) | `outputs/testkit-cloud/`(git 忽略,31.5 MB) | ✅ 已下载并记录 sha256,`manifest.lock.json` |
 | 媒体来源清单(URL、来源、许可备注) | [`scripts/testkit_sources.json`](../scripts/testkit_sources.json) | ✅ 已提交 |
-| 服务器端安装脚本(Ollama v0.35.1、llama.cpp b11146 CUDA、MiniCPM-V 4.6 GGUF,全部固定版本 + sha256 校验,只监听 127.0.0.1) | [`scripts/cloud/setup_server.sh`](../scripts/cloud/setup_server.sh) | ⚠ `bash -n` 语法通过,**未在真实服务器上跑过**;首次运行请盯着输出 |
+| 服务器端安装脚本(Ollama v0.35.1、llama.cpp b11146 CUDA、MiniCPM-V 4.6 GGUF,全部固定版本 + sha256 校验,只监听 127.0.0.1) | [`scripts/cloud/setup_server.sh`](../scripts/cloud/setup_server.sh) | ✅ 2026-10-04 在腾讯云 T4 上跑过;首次运行发现并修了 3 个缺陷(cudart 包解压路径、只查 `llama-server` 不查 CUDA 后端库导致悄悄退回 CPU、预检把 404 当不可达),见 [T4 实测 §6](cloud-t4-results-2026-10-04.md);重复运行时磁盘预检会因已装完而不足,需 `MIN_FREE_GB=10` |
+| 参数扫描用的重启脚本 | [`scripts/cloud/restart_llama.sh`](../scripts/cloud/restart_llama.sh) | ✅ 在 T4 上用过 |
 | 客户端测试套件(经 SSH 隧道从笔记本发请求) | [`scripts/cloud/run_cloud_suite.py`](../scripts/cloud/run_cloud_suite.py) | ✅ 16 个单元测试(用假服务器);✅ 已对本机 Ollama(`--api ollama`)和本机 llama-server SYCL 版(`--api openai`,`/v1/chat/completions` + `json_schema`)各做过 t0/t1/t3 冒烟运行,结果见 [延迟分布文档 §3.7](latency-distribution-2026-10-03.md);⚠ 尚未对 CUDA 版 llama-server 和多模型/并发(t2/t4)在真实服务器上跑过 |
 | 停止服务脚本 | [`scripts/cloud/stop_servers.sh`](../scripts/cloud/stop_servers.sh) | ⚠ 未在真实服务器上运行 |
 | 费用/流量模型 | [`scripts/cost_model.py`](../scripts/cost_model.py) | ✅ |
@@ -86,11 +87,12 @@ ssh-keygen -t ed25519 -f ~/.ssh/vi_cloud -C "visualintel-cloud-test"
 ssh -i <key> -p <port> -o IdentitiesOnly=yes -o ForwardAgent=no -o StrictHostKeyChecking=accept-new <user>@<host>
 git clone https://github.com/davyhanbigtiger/Visual_Intelligence_Integration.git
 bash Visual_Intelligence_Integration/scripts/cloud/setup_server.sh      # 可加 WITH_30B=1 / WITH_BF16=1
-# 2) 本机另开窗口:建隧道(保持运行)
-ssh -N -L 11434:127.0.0.1:11434 -L 8080:127.0.0.1:8080 -i <key> -p <port> -o IdentitiesOnly=yes -o ForwardAgent=no <user>@<host>
-# 3) 本机:跑套件(Ollama 路径;llama-server 路径见下)
-.venv\Scripts\python.exe scripts\cloud\run_cloud_suite.py --api ollama --price-per-hour <price>
-.venv\Scripts\python.exe scripts\cloud\run_cloud_suite.py --api openai --tests t0,t1,t2,t3 --price-per-hour <price>
+# 2) 本机另开窗口:建隧道(保持运行)。本机若已运行 Ollama(占用 11434),本地端口改用 21434 / 28080
+ssh -N -L 21434:127.0.0.1:11434 -L 28080:127.0.0.1:8080 -i <key> -p <port> -o IdentitiesOnly=yes -o ForwardAgent=no <user>@<host>
+# 3) 本机:跑套件(Ollama 路径;llama-server 路径见下)。价格币种不同(如人民币)时不要传 --price-per-hour,
+#    它的字段名是 usd_per_1000_requests;事后用吞吐自行换算并标注币种
+.venv\Scripts\python.exe scripts\cloud\run_cloud_suite.py --api ollama --base-url http://127.0.0.1:21434
+.venv\Scripts\python.exe scripts\cloud\run_cloud_suite.py --api openai --base-url http://127.0.0.1:28080 --tests t0,t1,t2,t3
 # 4) 取回服务器信息与日志(只含服务器侧元数据)
 scp -r -i <key> -P <port> <user>@<host>:~/vi/results ./outputs/cloud-server-results
 scp -r -i <key> -P <port> <user>@<host>:~/vi/logs ./outputs/cloud-server-logs

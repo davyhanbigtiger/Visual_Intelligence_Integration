@@ -317,6 +317,10 @@ def t2_concurrency(ctx: Ctx, kit: dict, model: str, levels: list[int], base_side
     out = {}
     budget = ErrorBudget()
     pool_images = kit["images"][1:]
+    # Warm the model first (an earlier test may have left a different model loaded, and a cold load would
+    # land in level 1 and understate its throughput). A distinct image/size keeps it out of every level's cache.
+    emit(ctx, "t2", request_model(ctx, model, to_jpeg(kit["images"][0], base_side - 4)),
+         model=model, side=base_side - 4, kind="warmup")
     # Each level resizes to a slightly different side, and none equals base_side (the size t1 already sent), so
     # no level can hit an image/prompt cache filled by t1 or by the previous level.
     for index, level in enumerate(levels):
