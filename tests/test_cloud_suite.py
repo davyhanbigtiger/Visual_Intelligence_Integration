@@ -211,7 +211,8 @@ def test_concurrency_levels_and_unique_sides(server, tmp_path):
     kit = suite.load_kit(make_kit(tmp_path))
     result = suite.t2_concurrency(ctx, kit, "minicpm-v4.6", [1, 4], 640)
     assert result["1"]["ok"] == 8 and result["4"]["ok"] == 12
-    assert result["1"]["side"] == 640 and result["4"]["side"] == 632  # levels never share cached pixels
+    # levels never share cached pixels with each other or with the size t1 used (640)
+    assert result["1"]["side"] == 632 and result["4"]["side"] == 624
     assert result["4"]["throughput_rps"] > result["1"]["throughput_rps"]
     assert result["1"]["usd_per_1000_requests"] > 0
 

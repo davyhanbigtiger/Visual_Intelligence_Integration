@@ -317,9 +317,10 @@ def t2_concurrency(ctx: Ctx, kit: dict, model: str, levels: list[int], base_side
     out = {}
     budget = ErrorBudget()
     pool_images = kit["images"][1:]
-    # Each level resizes to a slightly different side so no level can hit the previous level's image cache.
+    # Each level resizes to a slightly different side, and none equals base_side (the size t1 already sent), so
+    # no level can hit an image/prompt cache filled by t1 or by the previous level.
     for index, level in enumerate(levels):
-        side = base_side - 8 * index
+        side = base_side - 8 * (index + 1)
         count = min(max(8, 3 * level), len(pool_images))
         jpegs = [to_jpeg(path, side) for path in pool_images[:count]]
         result, records = run_level(ctx, model, level, jpegs)

@@ -102,7 +102,10 @@ fetch "$LLAMA_BASE/$LLAMA_TAR" "downloads/$LLAMA_TAR" "$LLAMA_SHA256"
 LLAMA_SERVER="$(find llama -name llama-server -type f | head -1)"
 chmod +x "$LLAMA_SERVER"
 LIBDIR="$(dirname "$WORK/$LLAMA_SERVER")"
-if LD_LIBRARY_PATH="$LIBDIR" ldd "$LLAMA_SERVER" 2>/dev/null | grep -q "not found"; then
+# The CUDA backend (libggml-cuda.so) is dlopen'ed at runtime, so ldd on llama-server alone does not reveal
+# missing libcudart/libcublas -- the server would then silently fall back to CPU. Check the backend lib too.
+CUDA_BACKEND="$LIBDIR/libggml-cuda.so"; [ -f "$CUDA_BACKEND" ] || CUDA_BACKEND=""
+if LD_LIBRARY_PATH="$LIBDIR" ldd "$LLAMA_SERVER" $CUDA_BACKEND 2>/dev/null | grep -q "not found"; then
   echo "CUDA runtime libraries missing: fetching the matching cudart bundle"
   fetch "$LLAMA_BASE/$CUDART_TAR" "downloads/$CUDART_TAR" "$CUDART_SHA256"
   tar -xzf "downloads/$CUDART_TAR" -C "$(dirname "$LLAMA_SERVER")"
@@ -125,6 +128,10 @@ fi
 # Not fatal: the prebuilt CUDA binary may not match this GPU/driver (e.g. an older Turing T4). Ollama is
 # already up, so keep going and use the Ollama-only test path; the log says why llama-server failed.
 if curl -fs http://127.0.0.1:8080/health; then echo
+  # Healthy is not the same as GPU-backed: confirm the log shows a CUDA device, otherwise timings are CPU numbers.
+  if ! grep -qiE "found [0-9]+ CUDA devices|loaded CUDA backend|CUDA0" logs/llama-server.log; then
+    echo "WARNING: llama-server is up but its log shows no CUDA device -- it is probably running on CPU. Check ldd of libggml-cuda.so." >&2
+  fi
 else
   echo "WARNING: llama-server is not healthy; see $WORK/logs/llama-server.log. Continuing with Ollama only." >&2
   tail -n 20 logs/llama-server.log >&2 || true
