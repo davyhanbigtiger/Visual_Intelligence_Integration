@@ -11,7 +11,7 @@
   .\scripts\cloud\start_local_llama.ps1
   .\scripts\cloud\start_local_llama.ps1 -Stop
 #>
-param([int]$Port = 18937, [switch]$Stop)
+param([int]$Port = 18937, [int]$FacadePort = 21436, [switch]$WithFacade, [switch]$Stop)
 $ErrorActionPreference = "Stop"
 $root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $pidFile = Join-Path $root "outputs\local-llama.pid.json"
@@ -19,9 +19,13 @@ $logDir = Join-Path $root "outputs\remote-stack"
 
 if ($Stop) {
     if (-not (Test-Path $pidFile)) { "No pid file; nothing to stop."; return }
-    $id = (Get-Content $pidFile -Raw | ConvertFrom-Json).pid
-    if ($id -and (Get-Process -Id $id -ErrorAction SilentlyContinue)) { Stop-Process -Id $id -Force; "stopped local llama-server (pid $id)" }
-    else { "local llama-server (pid $id) is not running" }
+    $recorded = Get-Content $pidFile -Raw | ConvertFrom-Json
+    foreach ($pair in @(@("local llama-server", $recorded.pid), @("local facade", $recorded.facade))) {
+        $id = $pair[1]
+        if (-not $id) { continue }
+        if (Get-Process -Id $id -ErrorAction SilentlyContinue) { Stop-Process -Id $id -Force; "stopped $($pair[0]) (pid $id)" }
+        else { "$($pair[0]) (pid $id) is not running" }
+    }
     return
 }
 
@@ -51,6 +55,19 @@ for ($i = 0; $i -lt 90 -and -not $ok; $i++) {
     try { $ok = (Invoke-RestMethod "http://127.0.0.1:$Port/health" -TimeoutSec 2).status -eq "ok" } catch { }
 }
 if (-not $ok) { throw "Local llama-server did not become healthy; see $logDir\local-llama.err.log" }
-@{ pid = $proc.Id; port = $Port; started = (Get-Date -Format s) } | ConvertTo-Json | Set-Content $pidFile -Encoding ascii
+$facadeId = $null
+if ($WithFacade) {
+    $python = Join-Path $root ".venv\Scripts\python.exe"
+    $facade = Start-Process -FilePath $python -WindowStyle Hidden -PassThru `
+        -ArgumentList @((Join-Path $root "scripts\cloud\ollama_facade.py"), "--upstream", "http://127.0.0.1:$Port", "--port", $FacadePort) `
+        -RedirectStandardOutput (Join-Path $logDir "local-facade.out.log") -RedirectStandardError (Join-Path $logDir "local-facade.err.log")
+    $facadeId = $facade.Id
+    Start-Sleep -Seconds 2
+}
+@{ pid = $proc.Id; facade = $facadeId; port = $Port; started = (Get-Date -Format s) } | ConvertTo-Json | Set-Content $pidFile -Encoding ascii
 "local llama-server : http://127.0.0.1:$Port  (pid $($proc.Id))"
+if ($WithFacade) {
+    "Ollama-style facade: http://127.0.0.1:$FacadePort  (pid $facadeId) -- frames stay on this machine"
+    "use it in this shell: `$env:VISUALINTEL_OLLAMA_URL = `"http://127.0.0.1:$FacadePort`""
+}
 "stop it with       : .\scripts\cloud\start_local_llama.ps1 -Stop"

@@ -107,8 +107,9 @@ $env:VISUALINTEL_OLLAMA_URL = "http://127.0.0.1:21435"     # 只对当前这个 
 .\.venv\Scripts\python.exe -m visualintel scene <video> --at 100
 Remove-Item Env:VISUALINTEL_OLLAMA_URL                      # 回到本机 Ollama
 .\scripts\cloud\connect_remote.ps1 -Stop
-# 本机 llama.cpp(核显)作对照:
-.\scripts\cloud\start_local_llama.ps1       # 以及 -Stop
+# 本机 llama.cpp(核显)作对照,画面不出本机;-WithFacade 同时给它配 Ollama 协议翻译层(端口 21436):
+.\scripts\cloud\start_local_llama.ps1 -WithFacade       # 用 $env:VISUALINTEL_OLLAMA_URL = "http://127.0.0.1:21436"
+.\scripts\cloud\start_local_llama.ps1 -Stop
 # 并排对比报告(远程模式只接受测试集里的公开/合成视频):
 .\.venv\Scripts\python.exe scripts\cloud\compare_local_remote.py --video outputs\testkit-cloud\synthetic\moving-shapes.avi
 ```
