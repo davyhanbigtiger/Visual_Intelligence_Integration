@@ -70,7 +70,12 @@ nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv
 nvidia-smi | grep -m1 "CUDA Version" || true
 FREE_GB="$(df -BG --output=avail "$WORK" | tail -1 | tr -dc '0-9')"
 echo "free disk under $WORK: ${FREE_GB} GB (need >= ${MIN_FREE_GB})"
-[ "$FREE_GB" -ge "$MIN_FREE_GB" ] || { echo "not enough disk; set a larger volume or MIN_FREE_GB lower" >&2; exit 1; }
+if [ -f "$WORK/gguf/$GGUF_MAIN" ]; then
+  # A finished install (e.g. a disk image or a re-run) already holds the big files; the requirement is for first installs.
+  echo "previous install found under $WORK: skipping the free-disk requirement"
+else
+  [ "$FREE_GB" -ge "$MIN_FREE_GB" ] || { echo "not enough disk; set a larger volume or MIN_FREE_GB lower" >&2; exit 1; }
+fi
 if ! tar --help 2>&1 | grep -q zstd && ! command -v zstd >/dev/null; then
   echo "zstd is needed to unpack the Ollama archive: apt-get install -y zstd (root) or ask for an image with zstd" >&2; exit 1
 fi
