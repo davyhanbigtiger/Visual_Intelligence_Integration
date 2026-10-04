@@ -48,7 +48,11 @@ ssh-keygen -t ed25519 -f ~/.ssh/vi_cloud -C "visualintel-cloud-test"
 - 1 张 NVIDIA GPU;跑到 qwen3-vl 8B 建议 ≥ 16 GB 显存,想顺带试 30B-A3B(`WITH_30B=1`,约 20 GB 权重)
   需要 ≥ 24 GB。更便宜的小卡也能跑 MiniCPM-V 4.6 部分,只是缺少大模型数据。
 - Ubuntu 22.04/24.04 一类的 Linux 镜像,驱动能让 `nvidia-smi` 工作;有 `curl`、`zstd`(解 Ollama 包)。
-- 磁盘 ≥ 45 GB(脚本默认检查,`MIN_FREE_GB` 可调);能 SSH 登录;出站可访问 github.com、
+- 磁盘:可用空间 ≥ 35 GB(脚本默认检查,`MIN_FREE_GB` 可调)。默认模型集约下载 19 GB(🏷 ollama.com 2026-10-03:
+  minicpm-v4.6 1.6、qwen3-vl 2b/4b/8b 1.9/3.3/6.1、minicpm-v4.5 6.1)+ 压缩包约 2.2 GB + 解压后的 Ollama /
+  llama.cpp(解压体积未测,按 ≤ 8 GB 估)+ GGUF 1.3 GB,合计约 30 GB。50 GB 若是**系统盘**,扣掉系统和驱动后可能不够;
+  空间紧时设 `MODELS="minicpm-v4.6 qwen3-vl:2b-instruct qwen3-vl:4b-instruct"` 可少下 12 GB;
+能 SSH 登录;出站可访问 github.com、
   huggingface.co、registry.ollama.ai(脚本会预检)。
 - **候选实例(用户提供):腾讯云 GPU 计算型 GN7.2XLARGE32,1×T4 16 GB、8 vCPU、32 GiB。** 装得下 MiniCPM-V 4.6
   和 qwen3-vl 2B/4B/8B(Q4);装不下 30B-A3B,T4(Turing)没有原生 bf16,所以不要设 `WITH_30B=1` / `WITH_BF16=1`。

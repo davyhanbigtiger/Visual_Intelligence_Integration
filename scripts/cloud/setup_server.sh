@@ -17,7 +17,9 @@ MODELS="${MODELS:-minicpm-v4.6 qwen3-vl:2b-instruct qwen3-vl:4b-instruct qwen3-v
 WITH_30B="${WITH_30B:-0}"       # 1 = also pull qwen3-vl:30b-a3b-instruct (~20 GB; needs >= 24 GB VRAM)
 WITH_BF16="${WITH_BF16:-0}"     # 1 = also fetch MiniCPM-V 4.6 bf16 GGUFs (~2.6 GB) to test precision
 LLAMA_CUDA="${LLAMA_CUDA:-12.8}"  # 12.8 or 13.4; pick the one <= the CUDA version nvidia-smi reports
-MIN_FREE_GB="${MIN_FREE_GB:-45}"
+# Default model set pulls ~19 GB (ollama.com sizes 2026-10-03: 1.6+1.9+3.3+6.1+6.1) plus ~2.2 GB of archives,
+# the extracted Ollama/llama.cpp trees (extracted size NOT measured, assumed <= ~8 GB) and 1.3 GB of GGUFs.
+MIN_FREE_GB="${MIN_FREE_GB:-35}"
 
 # ---- pinned sources (GitHub release API / Hugging Face LFS metadata, 2026-10-03) --------------------
 OLLAMA_VERSION="v0.35.1"
