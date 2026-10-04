@@ -108,7 +108,8 @@ CUDA_BACKEND="$LIBDIR/libggml-cuda.so"; [ -f "$CUDA_BACKEND" ] || CUDA_BACKEND="
 if LD_LIBRARY_PATH="$LIBDIR" ldd "$LLAMA_SERVER" $CUDA_BACKEND 2>/dev/null | grep -q "not found"; then
   echo "CUDA runtime libraries missing: fetching the matching cudart bundle"
   fetch "$LLAMA_BASE/$CUDART_TAR" "downloads/$CUDART_TAR" "$CUDART_SHA256"
-  tar -xzf "downloads/$CUDART_TAR" -C "$(dirname "$LLAMA_SERVER")"
+  # The bundle has one top-level directory; strip it so the libs sit next to libggml-cuda.so.
+  tar -xzf "downloads/$CUDART_TAR" --strip-components=1 -C "$(dirname "$LLAMA_SERVER")"
 fi
 export LD_LIBRARY_PATH="$LIBDIR:${LD_LIBRARY_PATH:-}"
 
