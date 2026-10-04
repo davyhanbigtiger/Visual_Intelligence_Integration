@@ -98,6 +98,25 @@ scp -r -i <key> -P <port> <user>@<host>:~/vi/results ./outputs/cloud-server-resu
 scp -r -i <key> -P <port> <user>@<host>:~/vi/logs ./outputs/cloud-server-logs
 ```
 
+## 4a. 这次真实租机的经验与踩过的坑(2026-10-04,腾讯云东京 T4)
+
+- **登录用户是 `ubuntu`,不是 root。** 下单时设的密码只对 `ubuntu` 有效;用 root 登录会一直报 "Permission denied",看起来像密码错。
+  `su -` 也会失败,需要 root 时用 `sudo`。
+- **公钥要装给 `ubuntu` 用户**(`~/.ssh/authorized_keys`,目录 700、文件 600),不要在 `sudo su -` 之后的 root shell 里装——
+  `~` 会变成 `/root`。装法:用密码登录一次,或用控制台的网页终端,把专用公钥追加进去;装完用密钥(`BatchMode=yes`)验证。
+- **专用密钥在 Windows 上生成**(自带 OpenSSH 8.6:`ssh-keygen -t ed25519 -N '""' -f %USERPROFILE%\.ssh\vi_cloud`),
+  不要复用日常密钥;从 WSL 里的 `~/.ssh` 生成的密钥,Windows 的 ssh.exe 读不到。
+- **核对主机指纹:** 首次连接前用 `ssh-keyscan -t ed25519 <host> | ssh-keygen -lf -` 的输出,和你在另一处(例如 WSL)接受的指纹对比。
+- **别把密码敲进 shell 或贴进聊天:** 误敲进 root shell 的密码会留在 `.bash_history`,做镜像时会被一起带走(见 T4 实测 §8)。
+- **安全组:** 实际只需要 `TCP:22` 且来源限定为自己的 IP。这次看到的现成安全组里还有对全网开放的 `17493`(备注 "GPU")、
+  `3389`(Windows 远程桌面)和 ICMP;服务器上并没有程序监听它们,所以没有实际暴露,但建议为测试实例**新建专用安全组**,
+  不要改一个可能还绑着其他机器的旧安全组。家庭宽带的公网 IP 会变,连不上时先检查是不是 IP 变了。
+- **本机 11434 被本机 Ollama 占用,** 隧道的本地端口用 21434 / 28080(见 §4)。
+- **安装脚本首次运行的三个缺陷(已修):** ① cudart 压缩包带一层目录,没加 `--strip-components=1`,库没放到 `libggml-cuda.so` 旁;
+  ② 只检查了 `llama-server` 的依赖,没检查 CUDA 后端库,缺库时服务悄悄退回 CPU(这构建的日志里没有 "CUDA" 字样,
+  要用 `nvidia-smi --query-compute-apps` 判断);③ 预检把 `registry.ollama.ai` 的 404 当成连不上。详见 T4 实测 §6。
+- **耗时:** 首次安装约 15 分钟,几乎全是下载;在已装好的盘上重跑脚本约 18 秒。
+
 ## 4b. 把远程 GPU 接到本机的产品命令(2026-10-04 起)
 
 ```powershell

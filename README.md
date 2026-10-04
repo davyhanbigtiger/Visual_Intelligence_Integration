@@ -10,6 +10,9 @@
 > 预览 smoke test 和一次真实模型调用已验证，87 项测试通过。连续场景质量仍待验收。
 > 详见 [当前项目状态](docs/project-status-2026-10-02.md)。
 
+> **2026-10-04 状态更新**：已用腾讯云东京一台 Tesla T4（16 GB）做过云 GPU 实测，并把远程 GPU 接到了摄像头 demo
+> （用户实测可用）。最新进展、未决事项与恢复步骤见 [项目状态 2026-10-04](docs/project-status-2026-10-04.md)。
+
 ## 当前研究目标：本地算力 ↔ 远程 GPU 的最低成本平衡点（2026-10-03）
 
 > 用户原话：能在 GPU 高性能计算机的远程支持和当地的 CPU 或者小型 GPU 计算力之间，
@@ -140,6 +143,18 @@ Ollama 请求可能仍在服务端完成。默认不保存画面、视频或描�
 `--max-image-side 320` 可作低分辨率速度对照，但可能损失细节；默认仍为 640。
 摄像头 demo 不控制机器人。测试视频和生成报告均被 gitignore。
 
+**换推理后端（2026-10-04，默认不变）**：环境变量 `VISUALINTEL_OLLAMA_URL` 可把同一个 demo 指向别的模型服务，只对设置它的那个
+shell 生效，且默认只接受回环地址。三种用法（延迟为窗口里的"耗时"，量级来自测试，非保证）：
+
+| 方式 | 命令 | 画面是否离开本机 | 量级 |
+|---|---|---|---|
+| 本机 Ollama CPU（默认） | 什么都不设 | 否 | 约 7–17 秒 |
+| 本机核显 llama.cpp | `.\scripts\cloud\start_local_llama.ps1 -WithFacade`，再 `$env:VISUALINTEL_OLLAMA_URL = "http://127.0.0.1:21436"` | 否 | 约 3–7 秒 |
+| 远程 Tesla T4 | `.\scripts\cloud\connect_remote.ps1 -HostName <host> -KeyPath <专用私钥>`，再 `$env:VISUALINTEL_OLLAMA_URL = "http://127.0.0.1:21435"` | **是**（发往云服务器） | 约 1 秒级（用户实测窗口显示约 1.3 秒，非受控） |
+
+恢复：`Remove-Item Env:VISUALINTEL_OLLAMA_URL`；停止服务：对应脚本加 `-Stop`。细节见
+[云 GPU 测试手册 §4b](docs/cloud-gpu-test-runbook-2026-10-03.md)。
+
 ## 文档索引
 
 - [docs/cost-balance-target-2026-10-03.md](docs/cost-balance-target-2026-10-03.md) —— 目标：本地算力 ↔ 远程 GPU 的最低成本平衡点（目标、约束、证据清单、计划）
@@ -173,7 +188,11 @@ Ollama 请求可能仍在服务端完成。默认不保存画面、视频或描�
 - [x] 保留 MiniCPM 默认；SmolVLM-500M CPU 作为未来 Plan B/辅助候选
 - [ ] 完成摄像头连续真实场景质量与稳定性验收
 - [ ] 完成 Stage 1 真实障碍物视频与人工质量验收
-- [ ] 补全硬件矩阵(Iris Xe SYCL / 云GPU 数据点)
+- [x] 补全硬件矩阵：Iris Xe SYCL 与云 GPU（Tesla T4）数据点已实测（2026-10-03/04）；更强的卡（4090/L4）与手机端侧未测
+- [x] 云 GPU 短租实测（腾讯云东京 T4）、远程 GPU 接入摄像头 demo（`VISUALINTEL_OLLAMA_URL` + 翻译层），139 项测试通过
+- [ ] 为 Ollama 偶发的"坐标乱码"（非法 JSON）加校验与失败重发，或评估改用 llama.cpp 作为默认引擎
+- [ ] 托管 API（如 Gemini / Qwen）的真实端到端延迟；"本机门控 + 云端关键帧"原型
 - [x] 记录新目标：本地 ↔ 远程 GPU 最低成本平衡点（2026-10-03），含成本/流量模型脚本与官方价格核实
 - [ ] 视觉分块阈值实验、摄像头验收、SmolVLM 对比、付费方案调研与决策文档（进行中）
-- [ ] 需要用户参与：云 GPU / 托管 API 实测（注册、支付、密钥由用户完成，只用公开图）；iPhone/VIVO 机型与系统版本（手机端侧实测）
+- [ ] 需要用户参与：托管 API 实测（注册、支付、密钥由用户完成，只用公开图）；iPhone/VIVO 机型与系统版本（手机端侧实测）；OpenVINO 需下载约 2.6 GB 权重，需用户批准
+- [ ] 用户待办：终止云实例并确认每小时费用为 0；决定是否做自定义镜像（做之前先清理 shell 历史，见 T4 实测 §8）
