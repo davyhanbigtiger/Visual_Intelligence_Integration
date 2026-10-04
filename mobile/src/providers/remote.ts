@@ -17,7 +17,10 @@ export interface RemoteOptions {
   now?: () => number;
 }
 
-const DEFAULT_TIMEOUT_MS = 30_000;
+// A GPU server answers in about a second, but a CPU / integrated-GPU box on the local network takes 8-17 s, and the first
+// request after a model starts takes longer still (observed 30+ s on the emulator test, 2026-10-04). 60 s avoids
+// reporting a healthy but slow server as broken; the UI shows "looking..." meanwhile.
+const DEFAULT_TIMEOUT_MS = 60_000;
 
 function headers(apiKey?: string): Record<string, string> {
   const base: Record<string, string> = { 'Content-Type': 'application/json' };

@@ -89,6 +89,6 @@ src/
 - 自动化:Jest(命令解析、拦截、话术映射、变焦、设置校验、远程提供方的请求/解析/超时/重试、控制器流程)、`tsc --noEmit`、ESLint、`expo-doctor`、`expo export` 打包。
 - Android 模拟器冒烟:远程提供方指向本机 llama.cpp(模拟器里 `10.0.2.2`),验证"拍一帧 → 模型 → 播报"端到端。
 - ✅ 用真实 llama.cpp 服务跑过应用自己的提供方代码(`remote.live.test.ts`,默认跳过,设 `LIVE_LLAMA_URL` 才运行),见上面的修订。
-- ⚠ Android 模拟器:应用在 Expo Go 里能加载(截图),但这台机器内存不足,模拟器系统进程持续"无响应",没能走完"拍照→模型→播报"的界面流程。
+- ✅ Android 模拟器(Expo Go):界面、设置、远程连接、拍照→模型→结果的链路走通(见 mobile/README.md);⚠ 模拟器拍照输出几乎全黑,朗读/语音识别/真实变焦/本机推理未验证。
 - ⚠ 未验证:本地模型在真机上的速度与内存(iPhone 内存、Metal)、`expo-speech-recognition` 的中文端侧识别、TestFlight 构建本身、真实远程服务器的 HTTPS 部署、**任何真实危险场景下的危险提示召回率**。
 - ⚠ 风险:`llama.rn` 与 MiniCPM-V 4.6 的组合只在源码层面确认支持,没有任何设备实测;老 iPhone 可能放不下约 1.3 GB 模型。
