@@ -22,7 +22,10 @@ MIN_FREE_GB="${MIN_FREE_GB:-45}"
 # ---- pinned sources (GitHub release API / Hugging Face LFS metadata, 2026-10-03) --------------------
 OLLAMA_VERSION="v0.35.1"
 OLLAMA_TAR="ollama-linux-amd64.tar.zst"
-OLLAMA_URL="https://github.com/ollama/ollama/releases/download/${OLLAMA_VERSION}/${OLLAMA_TAR}"
+# Download locations can be overridden (e.g. a mirror when github.com / huggingface.co are slow or blocked
+# from the instance's region). Files are still verified against the pinned sha256 below, so a mirror
+# cannot silently substitute different bytes. Ollama model pulls (registry.ollama.ai) are NOT sha-pinned here.
+OLLAMA_URL="${OLLAMA_URL:-https://github.com/ollama/ollama/releases/download/${OLLAMA_VERSION}/${OLLAMA_TAR}}"
 OLLAMA_SHA256="9fcd79ac4575b2bd31b992eee18b1000c8ad126b451627c8f8cd091714cfbb10"   # 1439.7 MB
 
 LLAMA_TAG="b11146"
@@ -37,8 +40,8 @@ else
   CUDART_TAR="cudart-llama-${LLAMA_TAG}-bin-ubuntu-cuda-12.8-x64.tar.gz"
   CUDART_SHA256="1466daea60aad1144819e151b2bae19d54556cf1da6c129c4f55a5ded2637c25"  # 594.4 MB
 fi
-LLAMA_BASE="https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_TAG}"
-HF_BASE="https://huggingface.co/ggml-org/MiniCPM-V-4.6-GGUF/resolve/main"
+LLAMA_BASE="${LLAMA_BASE:-https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_TAG}}"
+HF_BASE="${HF_BASE:-https://huggingface.co/ggml-org/MiniCPM-V-4.6-GGUF/resolve/main}"
 GGUF_MAIN="MiniCPM-V-4.6-Q4_K_M.gguf";        GGUF_MAIN_SHA="b1a5aa76b5ef039c2e579272ea33d4bbed7e79b49bb3ff1efdb23316d6af5199"  # 529.1 MB
 GGUF_PROJ="mmproj-MiniCPM-V-4.6-Q8_0.gguf";   GGUF_PROJ_SHA="3d8249cdd0e1cb699644eb021fbcc04320aad89fa5dc9234ef94db0846556581"  # 728.0 MB
 GGUF_BF16="MiniCPM-V-4.6-bf16.gguf";          GGUF_BF16_SHA="ba06adb9373cfa2ad34ef5b6b5fadc725df730b551d84675db6c5d576370b646"  # 1516.3 MB
@@ -115,7 +118,13 @@ if ! curl -fs --max-time 3 http://127.0.0.1:8080/health >/dev/null; then
   disown
   for _ in $(seq 1 120); do curl -fs --max-time 2 http://127.0.0.1:8080/health >/dev/null && break; sleep 1; done
 fi
-curl -fs http://127.0.0.1:8080/health; echo
+# Not fatal: the prebuilt CUDA binary may not match this GPU/driver (e.g. an older Turing T4). Ollama is
+# already up, so keep going and use the Ollama-only test path; the log says why llama-server failed.
+if curl -fs http://127.0.0.1:8080/health; then echo
+else
+  echo "WARNING: llama-server is not healthy; see $WORK/logs/llama-server.log. Continuing with Ollama only." >&2
+  tail -n 20 logs/llama-server.log >&2 || true
+fi
 
 step "audit record"
 {

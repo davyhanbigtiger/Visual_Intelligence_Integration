@@ -50,6 +50,15 @@ ssh-keygen -t ed25519 -f ~/.ssh/vi_cloud -C "visualintel-cloud-test"
 - Ubuntu 22.04/24.04 一类的 Linux 镜像,驱动能让 `nvidia-smi` 工作;有 `curl`、`zstd`(解 Ollama 包)。
 - 磁盘 ≥ 45 GB(脚本默认检查,`MIN_FREE_GB` 可调);能 SSH 登录;出站可访问 github.com、
   huggingface.co、registry.ollama.ai(脚本会预检)。
+- **候选实例(用户提供):腾讯云 GPU 计算型 GN7.2XLARGE32,1×T4 16 GB、8 vCPU、32 GiB。** 装得下 MiniCPM-V 4.6
+  和 qwen3-vl 2B/4B/8B(Q4);装不下 30B-A3B,T4(Turing)没有原生 bf16,所以不要设 `WITH_30B=1` / `WITH_BF16=1`。
+  这是云上很便宜的一档 GPU,数据可作为"最低成本档"的参照,不代表 4090/L4。实际价格、地域、是否竞价待用户确认
+  (我只在第三方聚合站看到标准按量价约 7.81–8.68 元/小时,未核实,也不是"2折"后的价格)。
+- **地域/镜像:** 若实例在国内,github.com / huggingface.co / registry.ollama.ai 可能很慢或不通
+  (未核实)。`setup_server.sh` 的下载地址可用环境变量 `OLLAMA_URL`、`LLAMA_BASE`、`HF_BASE` 换成镜像;
+  二进制和 GGUF 仍按固定 sha256 校验,但 `ollama pull` 的模型不在校验范围内。
+- **llama-server 起不来不算安装失败:** 预编译 CUDA 包是否含 T4 的 sm_75 内核我没核实;若启动失败,脚本现在会
+  打印日志尾部并继续,只用 Ollama 路径测试(`--api ollama`)。
 - 价格参考(🏷 runpod.io/pricing,2026-10-03 读取,USD/小时):RTX 4090 社区云 0.34、安全云 0.74,L4 0.44–0.49。
   其他平台未核实。**我无法控制计费**;预算上限 100 CAD/月只是调研约束,不是对具体消费的授权。
   估算:跑 2 小时按 0.74 USD/小时约 1.5 USD(≈ 2.1 CAD,汇率 1.4246),**加上存储/快照费**;
