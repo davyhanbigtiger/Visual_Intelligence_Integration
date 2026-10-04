@@ -129,9 +129,12 @@ fi
 # Not fatal: the prebuilt CUDA binary may not match this GPU/driver (e.g. an older Turing T4). Ollama is
 # already up, so keep going and use the Ollama-only test path; the log says why llama-server failed.
 if curl -fs http://127.0.0.1:8080/health; then echo
-  # Healthy is not the same as GPU-backed: confirm the log shows a CUDA device, otherwise timings are CPU numbers.
-  if ! grep -qiE "found [0-9]+ CUDA devices|loaded CUDA backend|CUDA0" logs/llama-server.log; then
-    echo "WARNING: llama-server is up but its log shows no CUDA device -- it is probably running on CPU. Check ldd of libggml-cuda.so." >&2
+  # Healthy is not the same as GPU-backed (build b11146 does not even print "CUDA" in its log). Ask the driver:
+  # a GPU-backed llama-server shows up as a compute process holding VRAM; otherwise timings are CPU numbers.
+  if nvidia-smi --query-compute-apps=process_name,used_memory --format=csv,noheader | grep -q llama-server; then
+    echo "GPU check: llama-server holds VRAM ($(nvidia-smi --query-compute-apps=used_memory --format=csv,noheader | head -1))"
+  else
+    echo "WARNING: llama-server is up but is not a GPU compute process -- it is probably running on CPU. Check ldd of libggml-cuda.so." >&2
   fi
 else
   echo "WARNING: llama-server is not healthy; see $WORK/logs/llama-server.log. Continuing with Ollama only." >&2

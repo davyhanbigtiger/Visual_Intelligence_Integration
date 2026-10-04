@@ -15,6 +15,7 @@ nohup "$LLAMA_SERVER" -m "$WORK/gguf/MiniCPM-V-4.6-Q4_K_M.gguf" --mmproj "$WORK/
 disown
 for _ in $(seq 1 120); do curl -fs --max-time 2 http://127.0.0.1:8080/health >/dev/null && break; sleep 1; done
 curl -fs http://127.0.0.1:8080/health && echo " args: $*"
-grep -qiE "found [0-9]+ CUDA devices|loaded CUDA backend|CUDA0" "$WORK/logs/llama-server.log" \
-  && echo "GPU: CUDA device present in the server log" \
-  || echo "WARNING: no CUDA device in the server log -- timings would be CPU numbers" >&2
+# Build b11146 does not log "CUDA"; ask the driver whether llama-server is a GPU compute process.
+nvidia-smi --query-compute-apps=process_name,used_memory --format=csv,noheader | grep -q llama-server \
+  && echo "GPU check: llama-server holds VRAM" \
+  || echo "WARNING: llama-server is not a GPU compute process -- timings would be CPU numbers" >&2
