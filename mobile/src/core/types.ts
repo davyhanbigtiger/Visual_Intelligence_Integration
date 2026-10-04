@@ -61,6 +61,7 @@ export type ProviderErrorKind =
   | 'server'
   | 'invalid_output'
   | 'not_ready'
+  | 'not_configured'
   | 'cancelled';
 
 export class ProviderError extends Error {

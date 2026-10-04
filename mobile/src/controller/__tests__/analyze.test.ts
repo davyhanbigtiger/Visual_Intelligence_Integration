@@ -29,11 +29,11 @@ function setup(overrides: { provider?: Partial<VisionProvider>; speakResults?: b
   let clock = 0;
   const controller = createAnalyzeController({
     getProvider: () => provider,
-    camera: { capture: async () => ({ uri: 'file:///photo.jpg' }) },
+    camera: { capture: async () => ({ uri: 'file:///photo.jpg', width: 1920, height: 1080 }) },
     encoder: {
-      encode: async (uri, maxSide): Promise<EncodedImage> => {
+      encode: async (photo, maxSide): Promise<EncodedImage> => {
         encodes.push(maxSide);
-        return { uri, base64: 'QUJD', width: maxSide, height: maxSide };
+        return { uri: photo.uri, base64: 'QUJD', width: maxSide, height: maxSide };
       },
     },
     speaker: {
@@ -180,8 +180,8 @@ describe('analyze controller', () => {
     const states: ControllerState[] = [];
     const controller = createAnalyzeController({
       getProvider: () => ({ id: 'remote', analyze: async () => ({ result: scene, rawText: '{}', latencyMs: 1, provider: 'remote' }) }),
-      camera: { capture: async () => ({ uri: 'file:///p.jpg' }) },
-      encoder: { encode: async (uri, side) => ({ uri, base64: 'QQ==', width: side, height: side }) },
+      camera: { capture: async () => ({ uri: 'file:///p.jpg', width: 100, height: 100 }) },
+      encoder: { encode: async (photo, side) => ({ uri: photo.uri, base64: 'QQ==', width: side, height: side }) },
       speaker: { speak: async () => Promise.reject(new Error('tts down')), stop: () => undefined },
       getSettings: () => ({ language: 'en', speakResults: true }),
       onState: (s) => states.push(s),

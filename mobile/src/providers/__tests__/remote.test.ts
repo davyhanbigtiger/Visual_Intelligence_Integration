@@ -76,7 +76,7 @@ describe('createRemoteProvider', () => {
   it('reports a network failure and never leaks the key into the message', async () => {
     const { fetchImpl } = recorder(() => Promise.reject(new TypeError('Network request failed')));
     const provider = createRemoteProvider({ baseUrl: 'https://h.example', apiKey: 'secret-key', fetchImpl });
-    const error = await provider.analyze(image, { language: 'en' }).catch((e) => e as ProviderError);
+    const error = (await provider.analyze(image, { language: 'en' }).catch((e) => e)) as ProviderError;
     expect(error).toBeInstanceOf(ProviderError);
     expect(error.kind).toBe('network');
     expect(error.message).not.toContain('secret-key');

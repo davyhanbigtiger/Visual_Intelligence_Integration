@@ -9,11 +9,17 @@ import {
 import { errorMessage } from '../i18n/strings';
 import { planSpeech, type SpeechPlan } from '../safety/policy';
 
+export interface CapturedPhoto {
+  uri: string;
+  width: number;
+  height: number;
+}
 export interface CameraPort {
-  capture(): Promise<{ uri: string }>;
+  capture(): Promise<CapturedPhoto>;
 }
 export interface ImageEncoderPort {
-  encode(uri: string, maxSide: number): Promise<EncodedImage>;
+  /** Re-encode as JPEG with the longest side at most `maxSide` (never upscales). */
+  encode(photo: CapturedPhoto, maxSide: number): Promise<EncodedImage>;
 }
 export interface SpeakerPort {
   speak(text: string, language: Language): Promise<void>;
@@ -73,7 +79,7 @@ export function createAnalyzeController(deps: ControllerDeps): AnalyzeController
     const started = now();
     try {
       deps.onState({ phase: 'capturing' });
-      let photo: { uri: string };
+      let photo: CapturedPhoto;
       try {
         photo = await deps.camera.capture();
       } catch {
@@ -84,14 +90,14 @@ export function createAnalyzeController(deps: ControllerDeps): AnalyzeController
       deps.onState({ phase: 'thinking', provider: provider.id });
       let outcome;
       try {
-        outcome = await provider.analyze(await deps.encoder.encode(photo.uri, sizes[0]), {
+        outcome = await provider.analyze(await deps.encoder.encode(photo, sizes[0]), {
           language,
           signal: abort.signal,
         });
       } catch (error) {
         if (!(error instanceof ProviderError) || error.kind !== 'invalid_output') throw error;
         // Some inputs make a model produce unusable text deterministically; the same pixels would fail again.
-        outcome = await provider.analyze(await deps.encoder.encode(photo.uri, sizes[1]), {
+        outcome = await provider.analyze(await deps.encoder.encode(photo, sizes[1]), {
           language,
           signal: abort.signal,
         });
