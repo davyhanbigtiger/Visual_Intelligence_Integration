@@ -144,6 +144,7 @@ Ollama 请求可能仍在服务端完成。默认不保存画面、视频或描�
 
 - [docs/cost-balance-target-2026-10-03.md](docs/cost-balance-target-2026-10-03.md) —— 目标：本地算力 ↔ 远程 GPU 的最低成本平衡点（目标、约束、证据清单、计划）
 - [docs/latency-distribution-2026-10-03.md](docs/latency-distribution-2026-10-03.md) —— 本机延迟受控实测（输入尺寸/分块阈值、CPU vs 核显、Ollama+Vulkan）与最优性审计表
+- 远程 GPU 接入本机：`scripts/cloud/connect_remote.ps1`（隧道 + Ollama 协议翻译层）+ 环境变量 `VISUALINTEL_OLLAMA_URL`（默认不变、仅回环地址），用法见云 GPU 测试手册 §4b
 - [docs/cloud-t4-results-2026-10-04.md](docs/cloud-t4-results-2026-10-04.md) —— 云 T4 实测：延迟、并发、冷启动、参数扫描、成本推算、非法输出比较与审计表
 - [docs/cloud-gpu-test-runbook-2026-10-03.md](docs/cloud-gpu-test-runbook-2026-10-03.md) —— 云 GPU 短租测试手册：准备物、隐私规则、步骤、测试内容、结束清单
 - [docs/project-status-2026-10-02.md](docs/project-status-2026-10-02.md) —— 当前目标、模型决策、摄像头启动与验证限制

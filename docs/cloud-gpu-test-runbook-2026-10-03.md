@@ -98,6 +98,24 @@ scp -r -i <key> -P <port> <user>@<host>:~/vi/results ./outputs/cloud-server-resu
 scp -r -i <key> -P <port> <user>@<host>:~/vi/logs ./outputs/cloud-server-logs
 ```
 
+## 4b. 把远程 GPU 接到本机的产品命令(2026-10-04 起)
+
+```powershell
+# 启动隧道 + Ollama 协议翻译层(只监听 127.0.0.1;-Stop 只结束它自己启动的两个进程)
+.\scripts\cloud\connect_remote.ps1 -HostName <host> -KeyPath $env:USERPROFILE\.ssh\vi_cloud
+$env:VISUALINTEL_OLLAMA_URL = "http://127.0.0.1:21435"     # 只对当前这个 shell 生效
+.\.venv\Scripts\python.exe -m visualintel scene <video> --at 100
+Remove-Item Env:VISUALINTEL_OLLAMA_URL                      # 回到本机 Ollama
+.\scripts\cloud\connect_remote.ps1 -Stop
+# 本机 llama.cpp(核显)作对照:
+.\scripts\cloud\start_local_llama.ps1       # 以及 -Stop
+# 并排对比报告(远程模式只接受测试集里的公开/合成视频):
+.\.venv\Scripts\python.exe scripts\cloud\compare_local_remote.py --video outputs\testkit-cloud\synthetic\moving-shapes.avi
+```
+
+**隐私:** 设置了 `VISUALINTEL_OLLAMA_URL` 之后,该 shell 里 `visualintel` 处理的画面(包括摄像头 demo 的画面)都会发往远程服务器。
+没设置时行为与以前完全一样。摄像头或个人录像经远程测试之前,需要你明确同意。
+
 ## 5. 测什么(套件内容)
 
 | 编号 | 内容 | 回答的问题 |

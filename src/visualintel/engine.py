@@ -1,6 +1,8 @@
 import base64
 import json
+import os
 import re
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 
@@ -187,6 +189,28 @@ class ModelCallError(RuntimeError):
     pass
 
 
+_LOOPBACK_HOSTS = ("localhost", "127.0.0.1", "::1")
+
+
+def default_base_url() -> str:
+    """Model endpoint: http://localhost:11434 unless VISUALINTEL_OLLAMA_URL names another one.
+
+    The override exists so the same code can talk to a local facade in front of a remote GPU reached through an
+    SSH tunnel. Frames are never sent to a non-loopback host unless VISUALINTEL_ALLOW_NONLOOPBACK=1 is set.
+    """
+    configured = os.environ.get("VISUALINTEL_OLLAMA_URL", "").strip().rstrip("/")
+    if not configured:
+        return "http://localhost:11434"
+    parsed = urllib.parse.urlparse(configured)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise EngineNotReadyError(f"VISUALINTEL_OLLAMA_URL is not a usable URL: {configured}")
+    if parsed.hostname not in _LOOPBACK_HOSTS and os.environ.get("VISUALINTEL_ALLOW_NONLOOPBACK") != "1":
+        raise EngineNotReadyError(
+            f"VISUALINTEL_OLLAMA_URL points at {parsed.hostname}, which is not loopback; "
+            "set VISUALINTEL_ALLOW_NONLOOPBACK=1 only if you really intend to send frames there")
+    return configured
+
+
 def _http_post_json(url: str, payload: dict, timeout: int) -> dict:
     req = urllib.request.Request(
         url,
@@ -205,9 +229,10 @@ def _http_get_json(url: str, timeout: int) -> dict:
 
 def check_ollama_ready(
     model: str = "minicpm-v4.6",
-    base_url: str = "http://localhost:11434",
+    base_url: str | None = None,
     get_fn=None,
 ) -> None:
+    base_url = base_url or default_base_url()
     get_fn = get_fn or _http_get_json
     try:
         data = get_fn(f"{base_url}/api/tags", 5)
@@ -227,12 +252,13 @@ def call_model(
     images_b64: list[str],
     prompt: str,
     model: str = "minicpm-v4.6",
-    base_url: str = "http://localhost:11434",
+    base_url: str | None = None,
     timeout: int = 300,
     post_fn=None,
     response_schema: dict | None = None,
     generation_options: dict | None = None,
 ) -> str:
+    base_url = base_url or default_base_url()
     post_fn = post_fn or _http_post_json
     payload = {
         "model": model,
